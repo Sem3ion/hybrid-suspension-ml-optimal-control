@@ -1,0 +1,20 @@
+# =====================================================================
+#  PROGETTO: Applied Machine Learning (A.A. 2025/2026)
+#  Università degli Studi di Padova (UNIPD)
+#  Autori: Andrea Alessandri / Alex Aliaj
+#  Python Target: 3.14.6 (Pienamente compatibile con Python 3.14+)
+# =====================================================================
+
+# --- DIPENDENZE ESTERNE (da installare tramite pip) ---
+numpy>=2.0.0         # Calcolo numerico e matriciale
+torch>=2.5.0         # Framework di Deep Learning (PyTorch)
+scikit-learn>=1.5.0  # Moduli di valutazione e metriche
+scipy>=1.14.0        # Calcolo scientifico avanzato e signal processing
+matplotlib>=3.9.0    # Grafica, visualizzazioni e animazioni interattive
+pandas>=2.2.0        # Manipolazione e analisi dati tabulari
+
+# =====================================================================
+#  LIBRERIE STANDARD (Già incluse in Python, NON vanno installate)
+# =====================================================================
+# - os   -> Gestione percorsi e sistema operativo
+# - time -> Monitoraggio e gestione dei tempi di esecuzione
