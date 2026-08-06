@@ -1,0 +1,33 @@
+MULTITASK:
+Guardando i due grafici fianco a fianco, la differenza è lampante e spiega esattamente perché avevo quella sensazione (e perché i numeri mi davano ragione):
+	1.	Grafico in alto a sinistra (‭$\xi(t)$‬‭‬‭‬‭‬):
+•	Nella versione con la ReLU, la linea verde della CNN (pur con le sue oscillazioni) segue in modo molto più reattivo e fedele i picchi e i cambi di pendenza della curva rossa del target fisico, soprattutto nella zona centrale e nel grande picco intorno a ‭$t = 6$‬‭‬ s.
+•	Nella versione con la GELU, la linea verde è visibilmente più "appiattita", fa molta più fatica a inseguire i picchi alti e tende a sottostimare o smorzare i transitori rapidi (vedi ad esempio l'intervallo tra ‭$t = 3$‬‭‬ e ‭$t = 5$‬‭‬ s).
+	2.	Perché succede: La natura smorzata e continua della GELU si mangia la reattività che serve a una rete di controllo per interpretare i transienti improvvisi dell'accelerazione verticale. La ReLU, tagliando in modo netto e diretto, lascia passare tutta la dinamica spigolosa dei transitori stradali.
+
+	Separare le CNN è una mossa migliore, soprattutto per una questione di specializzazione dei compiti e di pulizia dell'architettura.
+Fino ad ora ho usato un'unica rete con due "teste" (head_xi e head_F) che partivano da uno zoccolo convoluzionale comune. Ma pensando alla fisica del problema:
+•	Lo smorzamento ottimale (‭$\xi$‬) segue una logica legata alla frequenza di eccitazione e al comfort (regola ‭$\sqrt{2}\omega_n$‬‭‬).
+•	La forza dell'attuatore (‭$F_{att}$‬) segue una logica di controllo in tempo reale per smorzare i movimenti repentini della cassa.
+Avere due CNN completamente indipendenti (o comunque due rami con pesi separati) permette a ciascuna rete di concentrarsi al 100% sulle proprie feature senza compromessi.
+
+DUE TASK:
+•evitando il cosiddetto negative transfer
+•problema di averagepool con MacOS e uso di MBS GPU 
+Il problema dei numeri
+La tua finestra di ingresso a_z è di 100 campioni (1 secondo a 100 Hz).
+	1.	Il primo MaxPool1d(2) dimezza i dati: da 100 passi scendiamo a 50.
+	2.	Poi arriva l'AdaptiveAvgPool1d(8). Questo layer prende quei 50 passi temporali e li schiaccia a forza fino a farli diventare 8, facendo la media su blocchetti di circa 6 campioni alla volta.
+Perché si usa? Per "leggerezza". Schiacciando i dati a 8 passi, il layer Lineare successivo si ritrova a gestire solo 512 parametri (‭$64 \times 8$‬‭‬) invece di 3200 (‭$64 \times 50$‬‭‬), rendendo la rete più veloce e meno incline a imparare la traccia a memoria (overfitting).
+L'impatto sui tuoi due task
+Ora che abbiamo separato le due reti (grazie all'intuizione di prima), possiamo analizzare il danno sui due compiti:
+•	Sulla rete NetXi (Smorzamento): Il danno è minimo. Lo smorzamento ‭$\xi$‬ si basa sulla frequenza media della strada in quel secondo. Schiacciare i dati e fare delle medie va benissimo per capire se sei su un asfalto liscio o sul pavé.
+•	Sulla rete NetF (Attuatore): Qui il danno è enorme. L'attuatore skyhook deve generare una forza istantanea precisa al centesimo di secondo per contrastare la velocità della cassa. Se tu prendi l'accelerazione e ne fai la media ogni 6 centesimi di secondo, "impasti" i picchi. La rete perde la percezione esatta dell'istante in cui la ruota colpisce il dosso.
+La soluzione: togliamolo
+Dato che stiamo lavorando con CNN 1D molto leggere, la memoria non è un problema. Possiamo tranquillamente rimuovere l'AdaptiveAvgPool1d e lasciare che la rete veda tutti i 50 passi temporali puliti.
+
+
+Cosa fare per migliorare ‭$\xi(t)$‬ che insegue in ritardo e sclera nei picchi repentini
+Invece di toccare la finestra temporale, è molto più efficace agire su questi due fronti:
+	1.	Cambiare la Function Loss con la Huber Loss:
+Sostituire la nn.MSELoss() con una nn.HuberLoss() (o nn.SmoothL1Loss()) per la rete di ‭$\xi$‬. Poiché la MSE penalizza i grandi errori in modo quadratico, costringe la rete a fare previsioni "timide" e mediate. La Huber Loss ignora i picchi anomali o transitori isolati trattandoli linearmente, permettendo alla CNN di seguire meglio i picchi reali della regola ‭$\sqrt{2}\cdot\omega_n$‬.

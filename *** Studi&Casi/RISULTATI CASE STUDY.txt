@@ -1,0 +1,393 @@
+
+CASE STUDY:
+• opt_forza = optim.AdamW(rete_forza.parameters(), lr=1e-4, weight_decay=1e-5)
+• loss_forza = nn.SmoothL1Loss()
+• self.fc = nn.Sequential(nn.Linear(n_flat + 1, hidden), att(), nn.Dropout(0.2))
+•         self.tcn = nn.Sequential(
+            nn.Conv1d(1, 32, 3, padding=1, dilation=1), nn.BatchNorm1d(32), att(),
+            nn.Conv1d(32, 32, 3, padding=2, dilation=2), nn.BatchNorm1d(32), att(),
+            nn.Conv1d(32, 64, 3, padding=4, dilation=4), nn.BatchNorm1d(64), att(),
+            nn.Conv1d(64, 64, 3, padding=8, dilation=8), nn.BatchNorm1d(64), att(),
+        )
+
+       Normalizzazione (dai dati di training): Normalizzatore(a_z: media=+0.0019 std=0.9203 | v: media=10.625 std=6.500)
+
+      [2] Addestramento DUE reti separate (loss e optimizer indipendenti)...
+          Epoca 01/12  |  RETE xi(v): Loss(Training)=0.00393  Loss(Validation)=0.00048  |  RETE F_attuatore: Loss(Training)=0.00107  Loss(Validation)=0.00029
+          Epoca 03/12  |  RETE xi(v): Loss(Training)=0.00025  Loss(Validation)=0.00007  |  RETE F_attuatore: Loss(Training)=0.00031  Loss(Validation)=0.00025
+          Epoca 06/12  |  RETE xi(v): Loss(Training)=0.00013  Loss(Validation)=0.00003  |  RETE F_attuatore: Loss(Training)=0.00018  Loss(Validation)=0.00028
+          Epoca 09/12  |  RETE xi(v): Loss(Training)=0.00008  Loss(Validation)=0.00002  |  RETE F_attuatore: Loss(Training)=0.00014  Loss(Validation)=0.00024
+          Epoca 12/12  |  RETE xi(v): Loss(Training)=0.00005  Loss(Validation)=0.00001  |  RETE F_attuatore: Loss(Training)=0.00012  Loss(Validation)=0.00024
+
+      ==========================================================================================
+       VALIDAZIONE SU TRACCIA ISOLATA (mai vista)
+      ==========================================================================================
+       xi(t)    -> R^2: 0.9984 | RMSE: 0.0030 | MAE: 0.0018
+       forza(t) -> R^2: 0.9009 | RMSE: 33.0 N | MAE: 19.0 N
+       |forza| max prevista dal ML: 1007.3 N  (limite 1500 N)
+
+       Comfort CLOSED-LOOP (valori del ML, 60 s):
+         passiva 0.163 m/s^2  ->  ML 0.100 m/s^2  (38.6% meglio)
+         [riferimento ideale fisico: 59.8%]
+
+      ------------------------------------------------------------------
+       REGOLA √2: xi in funzione del rapporto r = omega/omega_n (target validazione)
+      ------------------------------------------------------------------
+      Range r    | v [km/h]  | xi medio  | kp [Ns/m]  | |forza| [N]
+      r<1        | 26.1      | 0.629     | 2220       | 60
+      1<r<√2     | 41.8      | 0.510     | 2577       | 90
+      √2<r<2     | 53.0      | 0.380     | 2955       | 70
+       Tenuta strada (RMS deflessione gomma): passiva 0.23 mm -> ML 0.17 mm
+
+       BILANCIO ENERGETICO (60 s, eta generatore = 60%):
+         DAMPER    - energia DISSIPATA (calore; recuperabile se rigenerativo) :   13.5 J
+         ATTUATORE - energia INIETTATA (presa dalla batteria, COSTO)          :    3.8 J
+         ATTUATORE - energia ASSORBITA (frenata, recuperabile)                :    2.9 J
+         RECUPERABILE totale = eta*(DAMPER dissipata + ATTUATORE assorbita)    :    9.8 J
+         BILANCIO NETTO = recuperabile - iniettata                            :   +6.1 J  -> ATTIVO (raccoglie energia)
+
+
+CASE STUDY 2:
+• opt_forza = optim.AdamW(rete_forza.parameters(), lr=1e-4, weight_decay=1e-5)
+• loss_forza = nn.SmoothL1Loss()
+• self.fc = nn.Sequential(nn.Linear(n_flat + 1, hidden), att(), nn.Dropout(0.2))
+•        self.tcn = nn.Sequential(
+            nn.Conv1d(1, 32, 3, padding=1, dilation=1),nn.BatchNorm1d(32),att(),
+            nn.Conv1d(32, 32, 3, padding=2, dilation=2),nn.BatchNorm1d(32),att(),
+            nn.Conv1d(32, 64, 3, padding=4, dilation=4),nn.BatchNorm1d(64),att(),
+            nn.Conv1d(64, 64, 3, padding=8, dilation=8),nn.BatchNorm1d(64),att(),
+            nn.Conv1d(64, 64, 3, padding=16, dilation=16),nn.BatchNorm1d(64),att(),
+        )
+
+   Normalizzazione (dai dati di training): Normalizzatore(a_z: media=+0.0019 std=0.9203 | v: media=10.625 std=6.500)
+
+[2] Addestramento DUE reti separate (loss e optimizer indipendenti)...
+    Epoca 01/12  |  RETE xi(v): Loss(Training)=0.00350  Loss(Validation)=0.00004  |  RETE F_attuatore: Loss(Training)=0.00094  Loss(Validation)=0.00030
+    Epoca 03/12  |  RETE xi(v): Loss(Training)=0.00028  Loss(Validation)=0.00003  |  RETE F_attuatore: Loss(Training)=0.00028  Loss(Validation)=0.00027
+    Epoca 06/12  |  RETE xi(v): Loss(Training)=0.00015  Loss(Validation)=0.00002  |  RETE F_attuatore: Loss(Training)=0.00017  Loss(Validation)=0.00026
+    Epoca 09/12  |  RETE xi(v): Loss(Training)=0.00009  Loss(Validation)=0.00004  |  RETE F_attuatore: Loss(Training)=0.00013  Loss(Validation)=0.00024
+    Epoca 12/12  |  RETE xi(v): Loss(Training)=0.00007  Loss(Validation)=0.00004  |  RETE F_attuatore: Loss(Training)=0.00011  Loss(Validation)=0.00026
+
+==========================================================================================
+ VALIDAZIONE SU TRACCIA ISOLATA (mai vista)
+==========================================================================================
+ xi(t)    -> R^2: 0.9987 | RMSE: 0.0027 | MAE: 0.0017
+ forza(t) -> R^2: 0.9056 | RMSE: 32.2 N | MAE: 18.2 N
+ |forza| max prevista dal ML: 1058.8 N  (limite 1500 N)
+
+ Comfort CLOSED-LOOP (valori del ML, 60 s):
+   passiva 0.163 m/s^2  ->  ML 0.100 m/s^2  (38.4% meglio)
+   [riferimento ideale fisico: 59.8%]
+
+------------------------------------------------------------------
+ REGOLA √2: xi in funzione del rapporto r = omega/omega_n (target validazione)
+------------------------------------------------------------------
+Range r    | v [km/h]  | xi medio  | kp [Ns/m]  | |forza| [N]
+r<1        | 26.1      | 0.629     | 2220       | 60
+1<r<√2     | 41.8      | 0.510     | 2577       | 90
+√2<r<2     | 53.0      | 0.380     | 2955       | 70
+ Tenuta strada (RMS deflessione gomma): passiva 0.23 mm -> ML 0.17 mm
+
+ BILANCIO ENERGETICO (60 s, eta generatore = 60%):
+   DAMPER    - energia DISSIPATA (calore; recuperabile se rigenerativo) :   13.4 J
+   ATTUATORE - energia INIETTATA (presa dalla batteria, COSTO)          :    3.7 J
+   ATTUATORE - energia ASSORBITA (frenata, recuperabile)                :    2.9 J
+   RECUPERABILE totale = eta*(DAMPER dissipata + ATTUATORE assorbita)    :    9.8 J
+   BILANCIO NETTO = recuperabile - iniettata                            :   +6.1 J  -> ATTIVO (raccoglie energia)
+
+
+
+CASE STUDY 3:
+• opt_forza = optim.AdamW(rete_forza.parameters(), lr=1e-4, weight_decay=1e-5)
+• loss_forza = nn.MSELoss()
+• self.fc = nn.Sequential(nn.Linear(n_flat + 1, hidden), att(), nn.Dropout(0.2))
+•        self.tcn = nn.Sequential(
+            nn.Conv1d(1, 32, 3, padding=1, dilation=1),nn.BatchNorm1d(32),att(),
+            nn.Conv1d(32, 32, 3, padding=2, dilation=2),nn.BatchNorm1d(32),att(),
+            nn.Conv1d(32, 64, 3, padding=4, dilation=4),nn.BatchNorm1d(64),att(),
+            nn.Conv1d(64, 64, 3, padding=8, dilation=8),nn.BatchNorm1d(64),att(),
+            nn.Conv1d(64, 64, 3, padding=16, dilation=16),nn.BatchNorm1d(64),att(),
+        )
+
+   Normalizzazione (dai dati di training): Normalizzatore(a_z: media=+0.0019 std=0.9203 | v: media=10.625 std=6.500)
+
+[2] Addestramento DUE reti separate (loss e optimizer indipendenti)...
+    Epoca 01/12  |  RETE xi(v): Loss(Training)=0.00298  Loss(Validation)=0.00009  |  RETE F_attuatore: Loss(Training)=0.00192  Loss(Validation)=0.00056
+    Epoca 03/12  |  RETE xi(v): Loss(Training)=0.00020  Loss(Validation)=0.00003  |  RETE F_attuatore: Loss(Training)=0.00054  Loss(Validation)=0.00054
+    Epoca 06/12  |  RETE xi(v): Loss(Training)=0.00011  Loss(Validation)=0.00002  |  RETE F_attuatore: Loss(Training)=0.00033  Loss(Validation)=0.00050
+    Epoca 09/12  |  RETE xi(v): Loss(Training)=0.00011  Loss(Validation)=0.00005  |  RETE F_attuatore: Loss(Training)=0.00026  Loss(Validation)=0.00045
+    Epoca 12/12  |  RETE xi(v): Loss(Training)=0.00005  Loss(Validation)=0.00002  |  RETE F_attuatore: Loss(Training)=0.00022  Loss(Validation)=0.00046
+
+==========================================================================================
+ VALIDAZIONE SU TRACCIA ISOLATA (mai vista)
+==========================================================================================
+ xi(t)    -> R^2: 0.9985 | RMSE: 0.0029 | MAE: 0.0021
+ forza(t) -> R^2: 0.9078 | RMSE: 31.8 N | MAE: 18.0 N
+ |forza| max prevista dal ML: 1067.3 N  (limite 1500 N)
+
+ Comfort CLOSED-LOOP (valori del ML, 60 s):
+   passiva 0.163 m/s^2  ->  ML 0.097 m/s^2  (40.1% meglio)
+   [riferimento ideale fisico: 59.8%]
+
+------------------------------------------------------------------
+ REGOLA √2: xi in funzione del rapporto r = omega/omega_n (target validazione)
+------------------------------------------------------------------
+Range r    | v [km/h]  | xi medio  | kp [Ns/m]  | |forza| [N]
+r<1        | 26.1      | 0.629     | 2220       | 60
+1<r<√2     | 41.8      | 0.510     | 2577       | 90
+√2<r<2     | 53.0      | 0.380     | 2955       | 70
+ Tenuta strada (RMS deflessione gomma): passiva 0.23 mm -> ML 0.16 mm
+
+ BILANCIO ENERGETICO (60 s, eta generatore = 60%):
+   DAMPER    - energia DISSIPATA (calore; recuperabile se rigenerativo) :   13.7 J
+   ATTUATORE - energia INIETTATA (presa dalla batteria, COSTO)          :    4.2 J
+   ATTUATORE - energia ASSORBITA (frenata, recuperabile)                :    2.9 J
+   RECUPERABILE totale = eta*(DAMPER dissipata + ATTUATORE assorbita)    :    9.9 J
+   BILANCIO NETTO = recuperabile - iniettata                            :   +5.7 J  -> ATTIVO (raccoglie energia)
+
+
+CASE 4:
+
+• opt_forza = optim.AdamW(rete_forza.parameters(), lr=1e-4, weight_decay=1e-5)
+• loss_forza = nn.MSELoss()
+• self.fc = nn.Sequential(nn.Linear(n_flat + 1, hidden), att(), nn.Dropout(0.1))
+•        self.tcn = nn.Sequential(
+            nn.Conv1d(1, 32, 3, padding=1, dilation=1),nn.BatchNorm1d(32),att(),
+            nn.Conv1d(32, 32, 3, padding=2, dilation=2),nn.BatchNorm1d(32),att(),
+            nn.Conv1d(32, 64, 3, padding=4, dilation=4),nn.BatchNorm1d(64),att(),
+            nn.Conv1d(64, 64, 3, padding=8, dilation=8),nn.BatchNorm1d(64),att(),
+            nn.Conv1d(64, 64, 3, padding=16, dilation=16),nn.BatchNorm1d(64),att(),
+        )
+
+    Normalizzazione (dai dati di training): Normalizzatore(a_z: media=+0.0019 std=0.9203 | v: media=10.625 std=6.500)
+
+[2] Addestramento DUE reti separate (loss e optimizer indipendenti)...
+    Epoca 01/12  |  RETE xi(v): Loss(Training)=0.00306  Loss(Validation)=0.00006  |  RETE F_attuatore: Loss(Training)=0.00172  Loss(Validation)=0.00058
+    Epoca 03/12  |  RETE xi(v): Loss(Training)=0.00020  Loss(Validation)=0.00006  |  RETE F_attuatore: Loss(Training)=0.00050  Loss(Validation)=0.00057
+    Epoca 06/12  |  RETE xi(v): Loss(Training)=0.00009  Loss(Validation)=0.00002  |  RETE F_attuatore: Loss(Training)=0.00029  Loss(Validation)=0.00046
+    Epoca 09/12  |  RETE xi(v): Loss(Training)=0.00006  Loss(Validation)=0.00006  |  RETE F_attuatore: Loss(Training)=0.00023  Loss(Validation)=0.00048
+    Epoca 12/12  |  RETE xi(v): Loss(Training)=0.00006  Loss(Validation)=0.00001  |  RETE F_attuatore: Loss(Training)=0.00019  Loss(Validation)=0.00047
+
+==========================================================================================
+ VALIDAZIONE SU TRACCIA ISOLATA (mai vista)
+==========================================================================================
+ xi(t)    -> R^2: 0.9991 | RMSE: 0.0022 | MAE: 0.0011
+ forza(t) -> R^2: 0.9114 | RMSE: 31.2 N | MAE: 17.9 N
+ |forza| max prevista dal ML: 1015.4 N  (limite 1500 N)
+
+ Comfort CLOSED-LOOP (valori del ML, 60 s):
+   passiva 0.163 m/s^2  ->  ML 0.100 m/s^2  (38.6% meglio)
+   [riferimento ideale fisico: 59.8%]
+
+------------------------------------------------------------------
+ REGOLA √2: xi in funzione del rapporto r = omega/omega_n (target validazione)
+------------------------------------------------------------------
+Range r    | v [km/h]  | xi medio  | kp [Ns/m]  | |forza| [N]
+r<1        | 26.1      | 0.629     | 2220       | 60
+1<r<√2     | 41.8      | 0.510     | 2577       | 90
+√2<r<2     | 53.0      | 0.380     | 2955       | 70
+ Tenuta strada (RMS deflessione gomma): passiva 0.23 mm -> ML 0.17 mm
+
+ BILANCIO ENERGETICO (60 s, eta generatore = 60%):
+   DAMPER    - energia DISSIPATA (calore; recuperabile se rigenerativo) :   13.5 J
+   ATTUATORE - energia INIETTATA (presa dalla batteria, COSTO)          :    3.7 J
+   ATTUATORE - energia ASSORBITA (frenata, recuperabile)                :    2.9 J
+   RECUPERABILE totale = eta*(DAMPER dissipata + ATTUATORE assorbita)    :    9.8 J
+   BILANCIO NETTO = recuperabile - iniettata                            :   +6.1 J  -> ATTIVO (raccoglie energia)
+
+
+CASE 5:
+
+• opt_forza = optim.AdamW(rete_forza.parameters(), lr=1e-4, weight_decay=1e-5)
+• loss_forza = nn.MSELoss()
+• self.fc = nn.Sequential(nn.Linear(n_flat + 1, hidden), att(), nn.Dropout(0.1))
+•        self.tcn = nn.Sequential(
+            nn.Conv1d(1, 32, 3, padding=1, dilation=1),nn.BatchNorm1d(32),att(),
+            nn.Conv1d(32, 32, 3, padding=2, dilation=2),nn.BatchNorm1d(32),att(),
+            nn.Conv1d(32, 64, 3, padding=4, dilation=4),nn.BatchNorm1d(64),att(),
+            nn.Conv1d(64, 64, 3, padding=8, dilation=8),nn.BatchNorm1d(64),att(),
+            nn.Conv1d(64, 64, 3, padding=16, dilation=16),nn.BatchNorm1d(64),att(),
+        )
+•kp_max = 4200, gli altri prima erano a 3800
+
+    Normalizzazione (dai dati di training): Normalizzatore(a_z: media=+0.0019 std=0.9203 | v: media=10.625 std=6.500)
+
+[2] Addestramento DUE reti separate (loss e optimizer indipendenti)...
+    Epoca 01/12  |  RETE xi(v): Loss(Training)=0.00318  Loss(Validation)=0.00008  |  RETE F_attuatore: Loss(Training)=0.00208  Loss(Validation)=0.00065
+    Epoca 03/12  |  RETE xi(v): Loss(Training)=0.00016  Loss(Validation)=0.00002  |  RETE F_attuatore: Loss(Training)=0.00059  Loss(Validation)=0.00056
+    Epoca 06/12  |  RETE xi(v): Loss(Training)=0.00010  Loss(Validation)=0.00003  |  RETE F_attuatore: Loss(Training)=0.00034  Loss(Validation)=0.00066
+    Epoca 09/12  |  RETE xi(v): Loss(Training)=0.00006  Loss(Validation)=0.00001  |  RETE F_attuatore: Loss(Training)=0.00025  Loss(Validation)=0.00050
+    Epoca 12/12  |  RETE xi(v): Loss(Training)=0.00005  Loss(Validation)=0.00001  |  RETE F_attuatore: Loss(Training)=0.00021  Loss(Validation)=0.00048
+
+==========================================================================================
+ VALIDAZIONE SU TRACCIA ISOLATA (mai vista)
+==========================================================================================
+ xi(t)    -> R^2: 0.9993 | RMSE: 0.0020 | MAE: 0.0006
+ forza(t) -> R^2: 0.9087 | RMSE: 32.9 N | MAE: 18.0 N
+ |forza| max prevista dal ML: 1268.1 N  (limite 1500 N)
+
+ Comfort CLOSED-LOOP (valori del ML, 60 s):
+   passiva 0.163 m/s^2  ->  ML 0.098 m/s^2  (39.6% meglio)
+   [riferimento ideale fisico: 61.4%]
+
+------------------------------------------------------------------
+ REGOLA √2: xi in funzione del rapporto r = omega/omega_n (target validazione)
+------------------------------------------------------------------
+Range r    | v [km/h]  | xi medio  | kp [Ns/m]  | |forza| [N]
+r<1        | 26.1      | 0.629     | 2268       | 61
+1<r<√2     | 41.8      | 0.510     | 2705       | 95
+√2<r<2     | 53.0      | 0.380     | 3167       | 75
+ Tenuta strada (RMS deflessione gomma): passiva 0.23 mm -> ML 0.17 mm
+
+ BILANCIO ENERGETICO (60 s, eta generatore = 60%):
+   DAMPER    - energia DISSIPATA (calore; recuperabile se rigenerativo) :   13.4 J
+   ATTUATORE - energia INIETTATA (presa dalla batteria, COSTO)          :    4.0 J
+   ATTUATORE - energia ASSORBITA (frenata, recuperabile)                :    2.9 J
+   RECUPERABILE totale = eta*(DAMPER dissipata + ATTUATORE assorbita)    :    9.8 J
+   BILANCIO NETTO = recuperabile - iniettata                            :   +5.8 J  -> ATTIVO (raccoglie energia)
+
+
+
+
+SCOPETO CHE xi(V) era di base un oracolo
+La cosa positiva è che hai appena scoperto un problema metodologico importante: il tuo R²=0.999 della vecchia rete ξ sembrava un risultato ML, ma era in realtà una copia della legge fisica nascosta nei dati.
+
+Questo è un risultato da riportare, non un fallimento: hai trovato che quella variabile non richiede apprendimento. La parte interessante rimane la forza attiva e, eventualmente, una futura ottimizzazione vera dello smorzamento.
+
+La rete ξ è stata trasformata in un modulo physics-informed: la schedulazione dello smorzamento viene garantita dalla legge √2, mentre la rete neurale viene utilizzata per apprendere il comando dell'attuatore. Le diagnostiche confermano assenza di dipendenza spuriosa dall'accelerazione e stabilità del comportamento in closed-loop.
+
+
+[2] Addestramento DUE reti separate (loss e optimizer indipendenti)...
+    Rete xi VINCOLATA alla fisica: xi = sigmoid(L(v) + 0.50*tanh(f(a_z))) -> monotonia in v garantita, a_z solo modulante
+    Epoca 01/12  |  RETE xi(v): Loss(Training)=0.00000  Loss(Validation)=0.00000  |  RETE F_attuatore: Loss(Training)=0.00366  Loss(Validation)=0.00109
+    Epoca 03/12  |  RETE xi(v): Loss(Training)=0.00000  Loss(Validation)=0.00000  |  RETE F_attuatore: Loss(Training)=0.00118  Loss(Validation)=0.00092
+    Epoca 06/12  |  RETE xi(v): Loss(Training)=0.00000  Loss(Validation)=0.00000  |  RETE F_attuatore: Loss(Training)=0.00072  Loss(Validation)=0.00085
+    Epoca 09/12  |  RETE xi(v): Loss(Training)=0.00000  Loss(Validation)=0.00000  |  RETE F_attuatore: Loss(Training)=0.00050  Loss(Validation)=0.00084
+    Epoca 12/12  |  RETE xi(v): Loss(Training)=0.00000  Loss(Validation)=0.00000  |  RETE F_attuatore: Loss(Training)=0.00041  Loss(Validation)=0.00100
+
+==========================================================================================
+ VALIDAZIONE (dati mai visti)
+==========================================================================================
+
+ [A] traccia REALE isolata (guida urbana ~30 km/h)
+   xi(t)    -> R^2: +1.0000 | RMSE: 0.0000 | MAE: 0.0000
+   forza(t) -> R^2: +0.9011 | RMSE: 34.2 N | MAE: 19.3 N
+
+ [B] strade SINTETICHE su celle disgiunte (4 tracce)
+   xi(t)    -> R^2: +1.0000 | RMSE: 0.0000 | MAE: 0.0000
+   forza(t) -> R^2: +0.9782 | RMSE: 89.7 N | MAE: 53.2 N
+     ^ se [B] crolla rispetto ad [A], la rete sta usando la firma di a_z
+       invece della velocita': e' la scorciatoia, non un problema di capacita'.
+
+ |forza| max prevista dal ML: 1073.4 N  (limite 1500 N)
+
+ Comfort CLOSED-LOOP (valori del ML, 60 s):
+   passiva 0.163 m/s^2  ->  ML 0.098 m/s^2  (40.0% meglio)
+   [riferimento ideale fisico: 54.1%]
+
+------------------------------------------------------------------
+ REGOLA √2: xi in funzione del rapporto r = omega/omega_n (target validazione)
+------------------------------------------------------------------
+Range r    | v [km/h]  | xi medio  | kp [Ns/m]  | |forza| [N]
+r<1        | 26.1      | 0.629     | 2268       | 61
+1<r<√2     | 41.8      | 0.510     | 2705       | 95
+√2<r<2     | 53.0      | 0.380     | 3167       | 75
+ Tenuta strada (RMS deflessione gomma): passiva 0.23 mm -> ML 0.16 mm
+
+ BILANCIO ENERGETICO (60 s, eta generatore = 60%):
+   DAMPER    - energia DISSIPATA (calore; recuperabile se rigenerativo) :   13.6 J
+   ATTUATORE - energia INIETTATA (presa dalla batteria, COSTO)          :    4.2 J
+   ATTUATORE - energia ASSORBITA (frenata, recuperabile)                :    2.9 J
+   RECUPERABILE totale = eta*(DAMPER dissipata + ATTUATORE assorbita)    :    9.9 J
+   BILANCIO NETTO = recuperabile - iniettata                            :   +5.7 J  -> ATTIVO (raccoglie energia)
+
+################################################################################################
+#  DIAGNOSTICA FISICA — xi deve seguire la VELOCITA', a_z puo' solo modulare
+################################################################################################
+
+================================================================================================
+ 1) MAPPA xi(v, RMS a_z) — OPEN LOOP (stessa forma d'onda, solo il livello cambia)
+================================================================================================
+    Lettura: lungo una RIGA deve restare quasi costante (a_z modula soltanto);
+             lungo una COLONNA deve scendere da xi_max a xi_min (schedulazione in v).
+
+  RMS a_z \ v [km/h]      14     22     29     36     43     50     58     65     72     79     86     94    101    108
+  ---------------------------------------------------------------------------------------------------------------------
+     6.00 m/s^2        0.682  0.659  0.623  0.569  0.497  0.412  0.324  0.247  0.188  0.147  0.121  0.105  0.095  0.089
+     3.88 m/s^2        0.682  0.659  0.623  0.569  0.497  0.412  0.324  0.247  0.188  0.147  0.121  0.105  0.095  0.089
+     2.51 m/s^2        0.682  0.659  0.623  0.569  0.497  0.412  0.324  0.247  0.188  0.147  0.121  0.105  0.095  0.089
+     1.63 m/s^2        0.682  0.659  0.623  0.569  0.497  0.412  0.324  0.247  0.188  0.147  0.121  0.105  0.095  0.089
+     1.05 m/s^2        0.682  0.659  0.623  0.569  0.497  0.412  0.324  0.247  0.188  0.147  0.121  0.105  0.095  0.089
+     0.68 m/s^2        0.682  0.659  0.623  0.569  0.497  0.412  0.324  0.247  0.188  0.147  0.121  0.105  0.095  0.089
+     0.44 m/s^2        0.682  0.659  0.623  0.569  0.497  0.412  0.324  0.247  0.188  0.147  0.121  0.105  0.095  0.089
+     0.29 m/s^2        0.682  0.659  0.623  0.569  0.497  0.412  0.324  0.247  0.188  0.147  0.121  0.105  0.095  0.089
+     0.18 m/s^2        0.682  0.659  0.623  0.569  0.497  0.412  0.324  0.247  0.188  0.147  0.121  0.105  0.095  0.089
+     0.12 m/s^2        0.682  0.659  0.623  0.569  0.497  0.412  0.324  0.247  0.188  0.147  0.121  0.105  0.095  0.089
+     0.08 m/s^2        0.682  0.659  0.623  0.569  0.497  0.412  0.324  0.247  0.188  0.147  0.121  0.105  0.095  0.089
+     0.05 m/s^2        0.682  0.659  0.623  0.569  0.497  0.412  0.324  0.247  0.188  0.147  0.121  0.105  0.095  0.089
+  ---------------------------------------------------------------------------------------------------------------------
+  FISICO (regola √2)   0.682  0.659  0.623  0.569  0.497  0.412  0.324  0.247  0.188  0.147  0.121  0.105  0.095  0.089
+  [range damper: xi_min=0.082  xi_max=0.716]
+
+================================================================================================
+ 2) xi MEDIO IN CLOSED-LOOP su strade ISO 8608 (anello di retroazione CHIUSO)
+================================================================================================
+  classe \ v [km/h]         22       40       58       76       97
+  ----------------------------------------------------------------
+  A (liscia)           0.659    0.535    0.324    0.166    0.099
+  B                    0.659    0.535    0.324    0.166    0.099
+  C                    0.659    0.535    0.324    0.166    0.099
+  D                    0.659    0.535    0.324    0.166    0.099
+  E (sconnessa)        0.659    0.535    0.324    0.166    0.099
+  ----------------------------------------------------------------
+  ATTESO (fisica)      0.659    0.535    0.324    0.166    0.099
+
+  RMS a_z closed-loop [m/s^2] (per capire quanto e' fuori distribuzione):
+    A:     0.25    0.31    0.29    0.24    0.23
+    B:     0.51    0.61    0.56    0.47    0.47
+    C:     0.98    1.25    1.09    0.92    0.91
+    D:     1.93    2.30    2.31    1.92    1.89
+    E:     3.99    4.69    4.57    4.05    4.64
+
+  Scostamento MASSIMO dalla fisica: 0.000 (classe E, 40 km/h: xi=0.535 contro 0.535)
+
+================================================================================================
+ 3) DISTRIBUZIONE DATASET (TRAINING) — dove vivono i campioni nel piano (v, a_z)
+================================================================================================
+  campioni: 465908
+  v     [km/h] : min    7.2  mediana   34.5  max  101.4
+  RMS a_z      : min  0.048  mediana  0.279  max 14.911
+  xi target    : min  0.095  mediana  0.582  max  0.696
+
+  corr(RMS a_z, xi)          = -0.307   <- la SCORCIATOIA disponibile: |.|>0.3 e' gia' sfruttabile
+  Spearman(RMS a_z, xi)      = -0.478
+  corr(v, xi)                = -0.985   <- il segnale VERO (forte e negativo)
+  corr(RMS a_z, v)           = +0.292   <- quanto a_z e v sono confuse fra loro
+  corr parziale (a v fissa)  = -0.121   <- residuo dopo aver rimosso l'effetto di v
+  copertura griglia (v x a_z)= 94%      <- alta = disegno fattoriale, bassa = diagonale
+
+  Tabella incrociata: xi target medio per bin di velocita' e di RMS a_z
+  RMS \ v [km/h]         13       24       35       52       82
+  -------------------------------------------------------------
+            7.81      0.677    0.651    0.562    0.379    0.142
+            0.53      0.680    0.650    0.581    0.388    0.149
+            0.29      0.680    0.649    0.581    0.411    0.166
+            0.19      0.681    0.647    0.582    0.443    0.181
+            0.10      0.683    0.650    0.588    0.465    0.186
+  ('--' = cella VUOTA: combinazione mai vista in addestramento; se le celle piene
+   stanno su una diagonale, velocita' e accelerazione NON sono separabili)
+
+================================================================================================
+ 4) INDICI DI SANITA' FISICA
+================================================================================================
+  [OK  ] indice di scorciatoia       = 0.000   (0 = xi dipende solo da v; >0.5 = a_z domina)
+          variazione di xi lungo a_z  = 0.0000
+          variazione di xi lungo v    = 0.2197
+  [OK  ] margine di monotonia        = +0.448   (min xi a bassa v  -  max xi ad alta v; deve essere > 0)
+  [OK  ] frazione monotona in v      = 100.0%  (quota di passi in v in cui xi scende)
+  [OK  ] errore medio |xi - regola √2| = 0.0000
+
+  Sensibilita' d(xi)/d(log10 RMS a_z), crossover r=√2 a 51 km/h:
+        sotto il crossover : +0.0000
+        sopra il crossover : +0.0000   <- se > 0 l'anello chiuso e' a RETROAZIONE POSITIVA
+  [OK  ] nessun anello positivo sopra il crossover

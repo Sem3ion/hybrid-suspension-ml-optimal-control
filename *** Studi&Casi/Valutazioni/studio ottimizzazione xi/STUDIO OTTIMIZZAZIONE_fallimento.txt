@@ -1,0 +1,332 @@
+AVENDO USATO
+    def modulazione(self, az_norm, v_norm):
+        feat = self.tcn(az_norm).flatten(1)
+        x = self.testa(self.fc(feat, v_norm))
+        return (2.0 / math.pi) * torch.atan(x)
+
+==========================================================================================
+ SOSPENSIONE 2 GDL (PEUGEOT 207) — CONTROLLO APPRESO (ML)
+ Legge di riferimento (etichette): OTTIMO VINCOLATO (comfort ISO 2631 sotto i limiti hardware)
+ omega_n = 9.41 rad/s (1.50 Hz)   |   crossover a r = √2 ≈ 1.414
+ Sistema: Darwin 24.6.0 / arm64 / Python 3.14.3 / codifica stampe utf-8
+==========================================================================================
+    HW: Apple Silicon GPU (MPS)
+    Core: 8 totali -> uso 4 performance (salto 4 efficiency)
+    Operatori verificati su mps (conv dilatate, batchnorm, riduzione depthwise, forward+backward)
+
+[1] Caricamento tracce e generazione etichette (parallela sui core)...
+  [ok] 3 tracce reali -> 2 train / 1 validazione (thessaloniki_19_11_2023.pkl)
+    [!] larisa_07_10_2023.pkl: cadenza reale 100.1 Hz (jitter 15.3%) contro cfg.freq_campion = 100 Hz
+        ricampionata su griglia uniforme: 271177 -> 271314 campioni. Senza questo, filtri e integrazioni lavorerebbero alla frequenza sbagliata.
+    [!] thessaloniki_01_10_2023.pkl: cadenza reale 100.1 Hz (jitter 13.5%) contro cfg.freq_campion = 100 Hz
+        ricampionata su griglia uniforme: 229148 -> 229200 campioni. Senza questo, filtri e integrazioni lavorerebbero alla frequenza sbagliata.
+    [!] thessaloniki_19_11_2023.pkl: cadenza reale 100.1 Hz (jitter 14.7%) contro cfg.freq_campion = 100 Hz
+        ricampionata su griglia uniforme: 252392 -> 252468 campioni. Senza questo, filtri e integrazioni lavorerebbero alla frequenza sbagliata.
+    Filtro ISO 2631-1 Wk verificato sulla Tabella 3 della norma: errore massimo 0.44%
+    Etichette da OTTIMIZZAZIONE VINCOLATA: si cerca la coppia (xi, kp) che
+    minimizza il comfort ISO 2631 Wk restando entro i limiti hardware.
+    Limiti dei vincoli — ognuno = limite di PICCO / fattore di picco:
+      GOMMA  picco  15.38 mm = (m_cassa+m_ruota)*g/k_gomma = (260+38)*9.807/190000   [deflessione statica: oltre, la ruota stacca]
+             fattore 3.30 (ripiego cfg)  ->  RMS ammesso 4.66 mm
+      CORSA  picco  80 mm = cfg.corsa_disponibile   [rattle space — VALORE NON VERIFICATO sulla 207]
+             fattore 3.30 (ripiego cfg)  ->  RMS ammesso 24.24 mm
+      FORZA  picco   1500 N  = cfg.forza_max   [saturazione attuatore, spec hardware]
+             fattore 3.30 (ripiego cfg)  ->  RMS ammesso 455 N
+      COMFORT scala 0.315 m/s^2 = cfg.xi_ott_comfort_rif   [soglia ISO 2631-1, non un limite: e' la scala dell'obiettivo]
+    Griglia 21x15 = 315 candidati, finestra 2 s, penalita' 1000
+    Data augmentation: 48 strade sintetiche ISO 8608 (buche/dossi bruschi, gradini, salite/discese)
+    Griglia fattoriale: 5 classi x 5 velocita' = 25 celle | training 21 celle | validazione 4 celle (DISGIUNTE)
+    Crossover r=√2 a v ≈ 53 km/h: le tracce a velocita' variabile lo attraversano a rugosita' costante
+      train  1: classe E (x1.09)  v   36-  42 km/h [costante]  RMS a_z= 5.13 m/s^2  ostacoli= 5  n_max=2.83 c/m
+      train  2: classe B (x1.10)  v   20-  97 km/h [rampa   ]  RMS a_z= 1.17 m/s^2  ostacoli=15  n_max=1.48 c/m
+      train  3: classe C (x0.77)  v   42- 100 km/h [urbano  ]  RMS a_z= 1.99 m/s^2  ostacoli= 7  n_max=1.43 c/m
+      train  4: classe C (x1.71)  v   19-  24 km/h [costante]  RMS a_z= 1.59 m/s^2  ostacoli= 9  n_max=2.83 c/m
+      train  5: classe E (x1.86)  v   73-  79 km/h [costante]  RMS a_z= 9.20 m/s^2  ostacoli=21  n_max=1.83 c/m
+      train  6: classe B (x1.29)  v   19-  24 km/h [costante]  RMS a_z= 0.71 m/s^2  ostacoli= 3  n_max=2.83 c/m
+      train  7: classe A (x1.65)  v   19-  78 km/h [rampa   ]  RMS a_z= 0.82 m/s^2  ostacoli= 5  n_max=1.86 c/m
+      train  8: classe E (x1.08)  v   95- 100 km/h [costante]  RMS a_z= 8.23 m/s^2  ostacoli=20  n_max=1.44 c/m
+      train  9: classe B (x0.78)  v   42-  99 km/h [urbano  ]  RMS a_z= 1.56 m/s^2  ostacoli=15  n_max=1.45 c/m
+      train 10: classe A (x1.17)  v   30-  75 km/h [urbano  ]  RMS a_z= 0.72 m/s^2  ostacoli=10  n_max=1.91 c/m
+      train 11: classe D (x1.27)  v   24-  58 km/h [rampa   ]  RMS a_z= 3.53 m/s^2  ostacoli=14  n_max=2.47 c/m
+      train 12: classe A (x1.71)  v   11-  78 km/h [sweep   ]  RMS a_z= 0.54 m/s^2  ostacoli= 2  n_max=1.85 c/m
+      train 13: classe D (x1.35)  v   37-  89 km/h [rampa   ]  RMS a_z= 4.13 m/s^2  ostacoli=16  n_max=1.63 c/m
+      train 14: classe C (x0.99)  v   11-  87 km/h [sweep   ]  RMS a_z= 2.09 m/s^2  ostacoli=12  n_max=1.66 c/m
+      train 15: classe D (x1.77)  v   11-  75 km/h [sweep   ]  RMS a_z= 4.38 m/s^2  ostacoli=30  n_max=1.91 c/m
+      train 16: classe C (x1.91)  v   54-  60 km/h [costante]  RMS a_z= 2.60 m/s^2  ostacoli= 7  n_max=2.40 c/m
+      train 17: classe E (x0.68)  v   32-  75 km/h [urbano  ]  RMS a_z= 4.91 m/s^2  ostacoli= 9  n_max=1.91 c/m
+      train 18: classe B (x1.88)  v   30-  75 km/h [urbano  ]  RMS a_z= 1.65 m/s^2  ostacoli=12  n_max=1.92 c/m
+      train 19: classe B (x1.69)  v   21-  52 km/h [urbano  ]  RMS a_z= 1.09 m/s^2  ostacoli= 4  n_max=2.78 c/m
+      train 20: classe A (x0.97)  v   46- 108 km/h [sweep   ]  RMS a_z= 0.61 m/s^2  ostacoli= 5  n_max=1.34 c/m
+      train 21: classe D (x1.85)  v   73-  79 km/h [costante]  RMS a_z= 5.49 m/s^2  ostacoli=28  n_max=1.82 c/m
+      train 22: classe E (x1.25)  v   36-  42 km/h [costante]  RMS a_z= 5.49 m/s^2  ostacoli=10  n_max=2.83 c/m
+      train 23: classe B (x1.63)  v   95- 101 km/h [costante]  RMS a_z= 2.27 m/s^2  ostacoli=22  n_max=1.43 c/m
+      train 24: classe C (x1.32)  v   73-  79 km/h [costante]  RMS a_z= 2.57 m/s^2  ostacoli= 7  n_max=1.82 c/m
+      train 25: classe C (x1.33)  v   21-  93 km/h [rampa   ]  RMS a_z= 1.93 m/s^2  ostacoli=10  n_max=1.55 c/m
+      train 26: classe E (x1.01)  v   41-  92 km/h [sweep   ]  RMS a_z= 6.42 m/s^2  ostacoli=13  n_max=1.57 c/m
+      train 27: classe B (x1.78)  v   20-  25 km/h [costante]  RMS a_z= 1.22 m/s^2  ostacoli= 8  n_max=2.83 c/m
+      train 28: classe A (x1.37)  v   73-  79 km/h [costante]  RMS a_z= 1.24 m/s^2  ostacoli=11  n_max=1.82 c/m
+      train 29: classe E (x1.88)  v   94-  99 km/h [costante]  RMS a_z=10.82 m/s^2  ostacoli=30  n_max=1.45 c/m
+      train 30: classe B (x1.49)  v   30-  77 km/h [rampa   ]  RMS a_z= 1.69 m/s^2  ostacoli=14  n_max=1.88 c/m
+      train 31: classe A (x1.81)  v   55-  61 km/h [costante]  RMS a_z= 1.15 m/s^2  ostacoli=14  n_max=2.36 c/m
+      train 32: classe D (x1.41)  v   32-  74 km/h [urbano  ]  RMS a_z= 3.94 m/s^2  ostacoli=15  n_max=1.95 c/m
+      train 33: classe A (x0.87)  v   18-  25 km/h [costante]  RMS a_z= 0.33 m/s^2  ostacoli= 1  n_max=2.83 c/m
+      train 34: classe D (x0.98)  v   37-  42 km/h [costante]  RMS a_z= 2.71 m/s^2  ostacoli= 6  n_max=2.83 c/m
+      train 35: classe C (x1.67)  v   22-  53 km/h [urbano  ]  RMS a_z= 1.81 m/s^2  ostacoli= 3  n_max=2.70 c/m
+      train 36: classe D (x1.03)  v   19-  25 km/h [costante]  RMS a_z= 2.14 m/s^2  ostacoli= 4  n_max=2.83 c/m
+      train 37: classe C (x1.07)  v   55-  61 km/h [costante]  RMS a_z= 2.03 m/s^2  ostacoli=10  n_max=2.37 c/m
+      train 38: classe E (x1.49)  v   27-  84 km/h [sweep   ]  RMS a_z= 7.21 m/s^2  ostacoli=19  n_max=1.71 c/m
+      train 39: classe B (x0.81)  v   21-  91 km/h [sweep   ]  RMS a_z= 1.52 m/s^2  ostacoli=16  n_max=1.58 c/m
+      train 40: classe B (x0.63)  v   38-  85 km/h [rampa   ]  RMS a_z= 1.26 m/s^2  ostacoli=12  n_max=1.69 c/m
+      train 41: classe A (x1.73)  v   19-  99 km/h [rampa   ]  RMS a_z= 0.72 m/s^2  ostacoli=10  n_max=1.46 c/m
+      train 42: classe D (x0.63)  v   73-  78 km/h [costante]  RMS a_z= 3.15 m/s^2  ostacoli=10  n_max=1.84 c/m
+      train 43: classe E (x1.04)  v   11-  81 km/h [sweep   ]  RMS a_z= 5.65 m/s^2  ostacoli=16  n_max=1.77 c/m
+      train 44: classe B (x1.59)  v   95- 101 km/h [costante]  RMS a_z= 1.77 m/s^2  ostacoli=10  n_max=1.43 c/m
+      train 45: classe C (x1.08)  v   73-  79 km/h [costante]  RMS a_z= 2.88 m/s^2  ostacoli=22  n_max=1.82 c/m
+      train 46: classe C (x1.05)  v   18-  25 km/h [costante]  RMS a_z= 0.87 m/s^2  ostacoli= 0  n_max=2.83 c/m
+      train 47: classe E (x0.72)  v   73-  78 km/h [costante]  RMS a_z= 6.13 m/s^2  ostacoli=14  n_max=1.84 c/m
+      train 48: classe B (x1.34)  v   19-  24 km/h [costante]  RMS a_z= 1.07 m/s^2  ostacoli= 9  n_max=2.83 c/m
+      valid  1: classe C (x0.62)  v   20-  98 km/h [rampa   ]  RMS a_z= 1.81 m/s^2  ostacoli=18  n_max=1.48 c/m
+      valid  2: classe E (x0.62)  v   19-  24 km/h [costante]  RMS a_z= 2.92 m/s^2  ostacoli= 3  n_max=2.83 c/m
+      valid  3: classe A (x1.44)  v   11-  86 km/h [sweep   ]  RMS a_z= 0.46 m/s^2  ostacoli= 3  n_max=1.68 c/m
+      valid  4: classe D (x1.08)  v   53- 119 km/h [urbano  ]  RMS a_z= 4.59 m/s^2  ostacoli=21  n_max=1.21 c/m
+    Campioni TRAIN      : 566864  (50 tracce = reali + sintetiche)
+    Etichetta FORZA     : |F*| max 1500 N su un limite di 1500 N  |  satura nel 0.16% dei campioni
+    Campioni VALID reale: 157458  (3a traccia registrata, mai vista)
+    Campioni VALID sint.: 17200  (4 strade su celle classe x velocita' DISGIUNTE dal training)
+    Normalizzazione (dai dati di training): Normalizzatore(a_z: media=+0.0009 std=2.1060 | v: media=12.037 std=6.986)
+    Salvata in normalizzatore.json
+
+[2] Addestramento di DUE reti separate (Loss() e Optimizer indipendenti)...
+    Scarto etichette dal baseline 'comfort' [logit]: mediana 1.82 | p90 3.31 | p99 4.03 | max 8.77
+    -> alpha suggerito (max scarto +10%) = 9.65   |   alpha finale in config = 7.00
+    [!] alpha finale TROPPO PICCOLO: la correzione satura e la rete non puo' raggiungere xi*. Alzo a 9.65.
+    Rete xi = sigmoid(L(v) + alpha*Delta(a_z,v)) con alpha da 0.30 a 9.65 (curriculum)
+    Regolarizzazione: rete xi lr=1e-03 wd=3e-04  |  rete forza lr=1e-04 wd=1e-05
+    loss forza: Huber con delta = 0.1779 (= 2 x 1.4826 x MAD = 2 x 0.0890)  |  curtosi in eccesso del target 8.1  |  14.5% dei campioni nel ramo lineare
+    loss xi: MSE pesata per strato (target senza code, ma con una massa al minimo del damper: serve il peso, non la robustezza)
+    Epoca 01/12  (alpha=0.30)  |  RETE xi: Loss(Train)=0.10501  Loss(Valid)=0.02829  |  RETE F: Loss(Train)=0.00308  Loss(Valid)=0.00187
+    Epoca 03/12  (alpha=2.97)  |  RETE xi: Loss(Train)=0.02671  Loss(Valid)=0.01517  |  RETE F: Loss(Train)=0.00151  Loss(Valid)=0.00199
+    Epoca 06/12  (alpha=6.98)  |  RETE xi: Loss(Train)=0.12325  Loss(Valid)=0.03308  |  RETE F: Loss(Train)=0.00112  Loss(Valid)=0.00194
+    Epoca 09/12  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12327  Loss(Valid)=0.03308  |  RETE F: Loss(Train)=0.00093  Loss(Valid)=0.00183
+    Epoca 12/12  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12327  Loss(Valid)=0.03308  |  RETE F: Loss(Train)=0.00081  Loss(Valid)=0.00193
+    Rollout su 48 strade sintetiche NUOVE (seme 1234+4441, celle identiche al training) + 2 registrate
+
+[2b] DAgger: allineamento fra dati di addestramento e stati visitati
+    Preparate 50 strade per l'aggregazione (20 s ciascuna), di cui 48 con strada VERA nota; etichette dell'esperto calcolate una volta
+    Validazione ricalibrata su rollout closed-loop di 4 strade di validazione (la vecchia era sulla distribuzione passiva)
+    giro 1/5  beta=1.00  |  RMS a_z visitata 3.600 contro 2.106 nel dataset  |  |xi_applicato - xi*| = 0.0000  |  campioni 566864 -> 653945
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12437  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00105  Loss(Valid)=0.00216
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12395  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00097  Loss(Valid)=0.00197
+    giro 2/5  beta=0.40  |  RMS a_z visitata 2.995 contro 2.375 nel dataset  |  |xi_applicato - xi*| = 0.1022  |  campioni 566864 -> 741026
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12437  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00105  Loss(Valid)=0.00192
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12437  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00096  Loss(Valid)=0.00204
+    giro 3/5  beta=0.16  |  RMS a_z visitata 2.850 contro 2.464 nel dataset  |  |xi_applicato - xi*| = 0.1431  |  campioni 566864 -> 828107
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12466  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00100  Loss(Valid)=0.00199
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12466  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00092  Loss(Valid)=0.00176
+    giro 4/5  beta=0.06  |  RMS a_z visitata 2.849 contro 2.513 nel dataset  |  |xi_applicato - xi*| = 0.1594  |  campioni 566864 -> 915188
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12488  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00093  Loss(Valid)=0.00195
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12488  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00085  Loss(Valid)=0.00180
+    giro 5/5  beta=0.03  |  RMS a_z visitata 2.909 contro 2.553 nel dataset  |  |xi_applicato - xi*| = 0.1660  |  campioni 566864 -> 1002269
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12505  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00084  Loss(Valid)=0.00180
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12505  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00079  Loss(Valid)=0.00203
+
+==========================================================================================
+ VALIDAZIONE — confronto fra valori APPRESI e valori CALCOLATI, su dati mai visti
+==========================================================================================
+ xi predetto / F predetta : APPRESO dalle reti (solo a_z passata + v)
+ xi* / F* di riferimento  : CALCOLATO per ottimizzazione (conosce la strada e lo stato vero)
+
+ [A] REGISTRATA: thessaloniki_19_11_2023.pkl  |  2525 s  |  v 0-55 km/h  |  RMS a_z 0.32 m/s^2  |  rugosita' equivalente classe ISO B
+   xi(t)    -> R^2: -0.1039 | RMSE: 0.0952 | MAE: 0.0292 | dev.std target: 0.0906
+   forza(t) -> R^2: +0.7325 | RMSE: 96.9 N | MAE: 65.7 N
+   picchi   -> |F| max: target 1421 N, ML 1175 N (-17%) | margine ML sul limite 22%
+                saturazione a ±1500 N: target 0.00%, ML 0.00% | sui picchi (|F*|>50% del max) il ML sta -333 N
+
+ [B] SINTETICHE, celle classe x velocita' DISGIUNTE dal training
+     valid  1 ISO C(x0.62) 20-98 km/h [rampa]; valid  2 ISO E(x0.62) 19-24 km/h [costante]; valid  3 ISO A(x1.44) 11-86 km/h [sweep]; valid  4 ISO D(x1.08) 53-119 km/h [urbano]
+   xi(t)    -> R^2: -2.4456 | RMSE: 0.2280 | MAE: 0.1921 | dev.std target: 0.1228
+   forza(t) -> R^2: +0.7886 | RMSE: 114.0 N | MAE: 63.8 N
+   picchi   -> |F| max: target 1500 N, ML 1500 N (+0%) | margine ML sul limite 0%
+                saturazione a ±1500 N: target 0.49%, ML 0.16% | sui picchi (|F*|>50% del max) il ML sta -330 N
+     ^ [B] e' il test severo: rugosita' x velocita' mai viste insieme.
+
+ |forza| max prevista dal ML: 1174.7 N  (limite 1500 N, margine 22%)
+
+ COMFORT in CLOSED-LOOP — RMS accelerazione cassa
+   dati: thessaloniki_19_11_2023.pkl, primi 60 s  (v 0-15 km/h, rugosita' equivalente classe ISO B)
+   passiva  0.166 m/s^2
+   ML       0.044 m/s^2   (+73.5% vs passiva)
+   ottimo   0.038 m/s^2   (+76.9% vs passiva)  <- il tetto raggiungibile con le etichette
+
+--------------------------------------------------------------------------
+ ETICHETTE OTTIME: xi* in funzione della RUGOSITA' (RMS a_z) e della velocita'   [strade sintetiche]
+--------------------------------------------------------------------------
+RMS a_z        | v [km/h]  | xi* medio  | |forza| [N]
+0.12-0.67      | 41.4      | 0.114      | 134
+0.67-2.15      | 51.2      | 0.325      | 100
+2.15-3.11      | 38.7      | 0.336      | 181
+3.11-7.95      | 80.3      | 0.321      | 178
+ TENUTA DI STRADA su thessaloniki_19_11_2023.pkl (60 s) — RMS deflessione pneumatico: passiva 0.24 mm -> ML 0.08 mm   (limite ammesso 4.66 mm)
+
+ BILANCIO ENERGETICO — integrali su 60 s di thessaloniki_19_11_2023.pkl
+   IPOTESI  damper    : damper IDRAULICO: il suo calore NON e' recuperabile ed e' escluso dal recupero
+   IPOTESI  attuatore : attuatore ideale in trazione (eta_attuatore = 100%): il costo e' un LIMITE INFERIORE
+   CONVENZIONE: le voci misurate sono MODULI (>=0), il verso e' nel nome. Il bilancio ha segno
+   dal punto di vista della BATTERIA: <0 esce, >0 rientra. I joule scalano con la durata: non sono una potenza.
+   MECCANICA  damper dissipato in calore nell'olio — PERSO, fuori bilancio :     3.8 J
+   MECCANICA  attuatore, lavoro fatto sul veicolo (spinge)                :     9.6 J
+   MECCANICA  attuatore, lavoro ricevuto dal veicolo (frena)              :    14.6 J
+   ELETTRICO  ADDEBITO  = lavoro in spinta / eta_attuatore                :    -9.6 J   (esce dalla batteria)
+   ELETTRICO  ACCREDITO = eta*(ATTUATORE assorbita)                      :    +8.7 J   (rientra in batteria)
+   ELETTRICO  NETTO     = accredito - addebito                            :    -0.9 J  -> COSTO NETTO (esce dalla batteria piu' di quanto rientra)
+   [sensibilita'] con le perdite di trazione al 60% come il generatore, il netto sarebbe -7.3 J
+   [sensibilita'] con un damper ELETTROMAGNETICO al posto dell'idraulico il netto sarebbe +1.4 J
+################################################################################################
+#  DIAGNOSTICA FISICA — xi deve seguire xi* ottimo: dipende dalla RUGOSITA' (da a_z) e dalla velocita'
+#  2026-07-31 08:26   |   vincolo strutturale: ATTIVO alpha=9.65   |   metodo_freq: velocita
+################################################################################################
+
+================================================================================================
+ 1) MAPPA xi(v, RMS a_z) — OPEN LOOP
+================================================================================================
+ DATI      : banca di finestre di a_z generate col modello PASSIVO su profili ISO
+             8608 classi B,C,D,E a 29/58/86 km/h, poi RISCALATE al livello di RMS
+             indicato in riga. La FORMA spettrale resta realistica, cambia solo
+             l'ampiezza: e' un esperimento controllato, una variabile per volta.
+ xi        : APPRESO dalla rete (uscita, non etichetta). Media su tutte le finestre.
+ NB        : e' OPEN LOOP — a_z e' imposta dall'esterno, non prodotta dal controllo.
+             Per il comportamento reale vedi la mappa closed-loop al punto 2.
+    Righe = livello di a_z, colonne = velocita'. Quindi:
+      lungo una RIGA (a_z fissa, v che cresce) xi deve SCENDERE da xi_max a xi_min;
+      lungo una COLONNA (v fissa, a_z che cresce) xi deve restare QUASI COSTANTE.
+
+  RMS a_z \ v [km/h]      14     22     29     36     43     50     58     65     72     79     86     94    101    108
+  ---------------------------------------------------------------------------------------------------------------------
+     6.00 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     3.88 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     2.51 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     1.63 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     1.05 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.68 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.44 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.29 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.18 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.12 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.08 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.05 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+  ---------------------------------------------------------------------------------------------------------------------
+  BASELINE √2 (solo v)   0.683  0.662  0.629  0.580  0.514  0.434  0.349  0.270  0.207  0.162  0.131  0.111  0.099  0.092
+  [range damper: xi_min=0.082  xi_max=0.716]
+
+================================================================================================
+ 2) xi MEDIO IN CLOSED-LOOP su strade ISO 8608 (anello di retroazione CHIUSO)
+================================================================================================
+ DATI      : 5 profili ISO 8608 (classi A, B, C, D, E) x 5 velocita' costanti, 12 s ciascuno,
+             generati come le strade di TRAINING (ostacoli, pendenze, spettro ISO).
+             Ogni cella e' la MEDIA di 5 realizzazioni con semi diversi:
+             con una sola strada per cella si legge il sorteggio degli ostacoli.
+             Scartato il 20% iniziale (warm-up: la finestra parte piena di zeri).
+ xi rete   : APPRESO — la rete legge la propria a_z controllata e comanda.
+ xi* target: CALCOLATO su QUELLA strada per ottimizzazione vincolata (conosce z_r).
+  classe \ v [km/h]         22       40       58       76       97
+  ----------------------------------------------------------------
+  A (liscia)           0.082    0.082    0.082    0.082    0.082
+  B                    0.082    0.082    0.082    0.082    0.082
+  C                    0.082    0.082    0.082    0.082    0.082
+  D                    0.082    0.082    0.082    0.082    0.082
+  E (sconnessa)        0.082    0.082    0.082    0.082    0.082
+  ----------------------------------------------------------------
+
+  TARGET xi* per classe (l'ottimo su QUELLA strada: cambia riga per riga):
+    A:    0.082   0.101   0.094   0.134   0.159
+    B:    0.083   0.123   0.247   0.195   0.255
+    C:    0.100   0.227   0.300   0.330   0.322
+    D:    0.212   0.325   0.339   0.333   0.348
+    E:    0.345   0.348   0.363   0.359   0.368
+  baseline √2 (solo v):    0.662   0.549   0.349   0.182   0.105
+
+  RMS a_z closed-loop [m/s^2] (per capire quanto e' fuori distribuzione):
+    A:     0.18    0.31    0.34    0.56    0.75
+    B:     0.25    0.50    0.85    0.84    1.26
+    C:     0.48    1.28    1.15    1.53    2.22
+    D:     1.43    2.00    2.34    2.96    3.34
+    E:     2.81    3.74    5.06    5.58    6.25
+
+  Errore medio  |xi_rete - xi*| = 0.162
+  Errore MASSIMO                = 0.286 (classe E, 97 km/h: xi=0.082 contro xi*=0.368)
+
+  RUMORE DEL TARGET (da 5 realizzazioni della stessa cella):
+    scarto tipo fra realizzazioni     : 0.035   (max 0.122)
+    incertezza sulla MEDIA riportata  : 0.016   <- barra d'errore delle celle qui sopra
+    celle con errore oltre 2 barre    : 21 su 25   (le altre sono compatibili col rumore)
+    bias medio con segno              : -0.162   (rete piu MORBIDA del target)
+
+  Escursione di xi* fra classe A ed E, a parita' di velocita' : 0.243
+  Escursione prodotta dalla RETE                              : 0.000
+  (se la prima e' grande e la seconda ~0, la rete sta ignorando la strada;
+   se la prima e' ~0, e' il TARGET a non dipendere dalla strada)
+
+================================================================================================
+ 3) DISTRIBUZIONE DATASET (TRAINING) — dove vivono i campioni nel piano (v, a_z)
+================================================================================================
+ DATI      : 50 tracce di TRAINING (2 reali registrate + 48 sintetiche ISO 8608), finestre da 2 s
+ xi        : ETICHETTA calcolata (target), non uscita della rete
+  campioni analizzati: 150000 (sottocampionati da 566864)
+  v     [km/h] : min    7.2  mediana   37.7  max  107.7
+  RMS a_z      : min  0.053  mediana  0.343  max 13.329
+  xi target    : min  0.082  mediana  0.082  max  0.716
+
+  corr(RMS a_z, xi)          = +0.630   <- il SEGNALE VERO (xi* dipende dalla rugosita')
+  Spearman(RMS a_z, xi)      = +0.741
+  corr(v, xi)                = +0.527   <- informazione COMPLEMENTARE: serve a convertire a_z in rugosita'
+  corr(RMS a_z, v)           = +0.413   <- quanto a_z e v sono confuse fra loro
+  corr parziale (a v fissa)  = +0.532   <- quanto conta a_z A PARITA' di velocita' (deve essere grande)
+  copertura griglia (v x a_z)= 94%      <- alta = disegno fattoriale, bassa = diagonale
+
+  Tabella incrociata: xi target medio per bin di velocita' e di RMS a_z
+  RMS \ v [km/h]         14       25       37       57       89
+  -------------------------------------------------------------
+            7.38      0.216    0.248    0.329    0.324    0.350
+            0.94      0.145    0.153    0.185    0.270    0.319
+            0.36      0.085    0.090    0.094    0.119    0.135
+            0.21      0.083    0.083    0.089    0.091    0.096
+            0.11      0.082    0.082    0.083    0.084    0.087
+  ('--' = cella VUOTA: combinazione mai vista in addestramento; se le celle piene
+   stanno su una diagonale, velocita' e accelerazione NON sono separabili)
+
+================================================================================================
+ 4) INDICI DI SANITA' FISICA   [target = xi* ottimo]
+================================================================================================
+  [    ] quota di xi spiegata da a_z  = 0.659   (ora NON deve essere 0: se lo e', la rete ignora la strada)
+          variazione di xi lungo a_z  = 0.0000
+          variazione di xi lungo v    = 0.0000
+  [NO  ] errore closed-loop |xi - xi*| = 0.1619   (e' l'indicatore che conta ora)
+  [NO  ] escursione con la strada: rete 0.000 contro target 0.243  (0% del necessario)
+  [    ] frazione monotona in v       = 53.8%  (non piu' un requisito: la tenuta puo' chiedere di irrigidire)
+  [    ] distanza dal baseline √2     = 0.2698   (se ~0 la correzione appresa non sta facendo nulla)
+
+  Sensibilita' d(xi)/d(log10 RMS a_z), crossover r=√2 a 53 km/h:
+        sotto il crossover : -0.0000
+        sopra il crossover : -0.0000
+        (sopra r=√2 una sensibilita' POSITIVA e' un anello di retroazione
+         positivo, ma ora puo' essere legittimo: se xi* stesso sale con la
+         rugosita', l'anello e' voluto. Va giudicato contro xi*, non da solo.)
+
+  Figura diagnostica salvata: diagnostica_xi.png
+  Report testuale salvato:    diagnostica_report.txt
+    [ok] Figura salvata: risultati_sospensione.png
+    [ok] Figura efficienza salvata: efficienza_sospensione.png
+
+[3] Animazione: tutti i controllori sulla stessa strada demo...
+    (la strada demo e' severa — equivale a una classe E ISO 8608 — quindi xi DEVE muoversi parecchio)
+    Controllori simulati sulla stessa strada demo (8 s):
+                          xi  comfort Wk  gomma[mm]  margine
+      ML       0.082-0.082        1.22       7.22     1.55
+      ottimo   0.082-0.426        1.81       4.61     0.99
+      sqrt2    0.120-0.606        1.98       5.87     1.26
+      passivo  0.307 (fisso)        1.98       4.50     0.96
+      (margine > 1 = il vincolo di distacco ruota e' violato)
+    scarto medio |xi_ML - xi*| sulla demo: 0.156
+    [i] MP4 non salvato: manca ffmpeg. Per installarlo: brew install ffmpeg
+        (l'animazione a schermo funziona comunque) FileNotFoundError
+==========================================================================================

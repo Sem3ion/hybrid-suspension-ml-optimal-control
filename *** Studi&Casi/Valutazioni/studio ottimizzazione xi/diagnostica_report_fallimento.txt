@@ -1,0 +1,132 @@
+################################################################################################
+#  DIAGNOSTICA FISICA — xi deve seguire xi* ottimo: dipende dalla RUGOSITA' (da a_z) e dalla velocita'
+#  2026-07-31 08:26   |   vincolo strutturale: ATTIVO alpha=9.65   |   metodo_freq: velocita
+################################################################################################
+
+================================================================================================
+ 1) MAPPA xi(v, RMS a_z) — OPEN LOOP
+================================================================================================
+ DATI      : banca di finestre di a_z generate col modello PASSIVO su profili ISO
+             8608 classi B,C,D,E a 29/58/86 km/h, poi RISCALATE al livello di RMS
+             indicato in riga. La FORMA spettrale resta realistica, cambia solo
+             l'ampiezza: e' un esperimento controllato, una variabile per volta.
+ xi        : APPRESO dalla rete (uscita, non etichetta). Media su tutte le finestre.
+ NB        : e' OPEN LOOP — a_z e' imposta dall'esterno, non prodotta dal controllo.
+             Per il comportamento reale vedi la mappa closed-loop al punto 2.
+    Righe = livello di a_z, colonne = velocita'. Quindi:
+      lungo una RIGA (a_z fissa, v che cresce) xi deve SCENDERE da xi_max a xi_min;
+      lungo una COLONNA (v fissa, a_z che cresce) xi deve restare QUASI COSTANTE.
+
+  RMS a_z \ v [km/h]      14     22     29     36     43     50     58     65     72     79     86     94    101    108
+  ---------------------------------------------------------------------------------------------------------------------
+     6.00 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     3.88 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     2.51 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     1.63 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     1.05 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.68 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.44 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.29 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.18 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.12 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.08 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.05 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+  ---------------------------------------------------------------------------------------------------------------------
+  BASELINE √2 (solo v)   0.683  0.662  0.629  0.580  0.514  0.434  0.349  0.270  0.207  0.162  0.131  0.111  0.099  0.092
+  [range damper: xi_min=0.082  xi_max=0.716]
+
+================================================================================================
+ 2) xi MEDIO IN CLOSED-LOOP su strade ISO 8608 (anello di retroazione CHIUSO)
+================================================================================================
+ DATI      : 5 profili ISO 8608 (classi A, B, C, D, E) x 5 velocita' costanti, 12 s ciascuno,
+             generati come le strade di TRAINING (ostacoli, pendenze, spettro ISO).
+             Ogni cella e' la MEDIA di 5 realizzazioni con semi diversi:
+             con una sola strada per cella si legge il sorteggio degli ostacoli.
+             Scartato il 20% iniziale (warm-up: la finestra parte piena di zeri).
+ xi rete   : APPRESO — la rete legge la propria a_z controllata e comanda.
+ xi* target: CALCOLATO su QUELLA strada per ottimizzazione vincolata (conosce z_r).
+  classe \ v [km/h]         22       40       58       76       97
+  ----------------------------------------------------------------
+  A (liscia)           0.082    0.082    0.082    0.082    0.082
+  B                    0.082    0.082    0.082    0.082    0.082
+  C                    0.082    0.082    0.082    0.082    0.082
+  D                    0.082    0.082    0.082    0.082    0.082
+  E (sconnessa)        0.082    0.082    0.082    0.082    0.082
+  ----------------------------------------------------------------
+
+  TARGET xi* per classe (l'ottimo su QUELLA strada: cambia riga per riga):
+    A:    0.082   0.101   0.094   0.134   0.159
+    B:    0.083   0.123   0.247   0.195   0.255
+    C:    0.100   0.227   0.300   0.330   0.322
+    D:    0.212   0.325   0.339   0.333   0.348
+    E:    0.345   0.348   0.363   0.359   0.368
+  baseline √2 (solo v):    0.662   0.549   0.349   0.182   0.105
+
+  RMS a_z closed-loop [m/s^2] (per capire quanto e' fuori distribuzione):
+    A:     0.18    0.31    0.34    0.56    0.75
+    B:     0.25    0.50    0.85    0.84    1.26
+    C:     0.48    1.28    1.15    1.53    2.22
+    D:     1.43    2.00    2.34    2.96    3.34
+    E:     2.81    3.74    5.06    5.58    6.25
+
+  Errore medio  |xi_rete - xi*| = 0.162
+  Errore MASSIMO                = 0.286 (classe E, 97 km/h: xi=0.082 contro xi*=0.368)
+
+  RUMORE DEL TARGET (da 5 realizzazioni della stessa cella):
+    scarto tipo fra realizzazioni     : 0.035   (max 0.122)
+    incertezza sulla MEDIA riportata  : 0.016   <- barra d'errore delle celle qui sopra
+    celle con errore oltre 2 barre    : 21 su 25   (le altre sono compatibili col rumore)
+    bias medio con segno              : -0.162   (rete piu MORBIDA del target)
+
+  Escursione di xi* fra classe A ed E, a parita' di velocita' : 0.243
+  Escursione prodotta dalla RETE                              : 0.000
+  (se la prima e' grande e la seconda ~0, la rete sta ignorando la strada;
+   se la prima e' ~0, e' il TARGET a non dipendere dalla strada)
+
+================================================================================================
+ 3) DISTRIBUZIONE DATASET (TRAINING) — dove vivono i campioni nel piano (v, a_z)
+================================================================================================
+ DATI      : 50 tracce di TRAINING (2 reali registrate + 48 sintetiche ISO 8608), finestre da 2 s
+ xi        : ETICHETTA calcolata (target), non uscita della rete
+  campioni analizzati: 150000 (sottocampionati da 566864)
+  v     [km/h] : min    7.2  mediana   37.7  max  107.7
+  RMS a_z      : min  0.053  mediana  0.343  max 13.329
+  xi target    : min  0.082  mediana  0.082  max  0.716
+
+  corr(RMS a_z, xi)          = +0.630   <- il SEGNALE VERO (xi* dipende dalla rugosita')
+  Spearman(RMS a_z, xi)      = +0.741
+  corr(v, xi)                = +0.527   <- informazione COMPLEMENTARE: serve a convertire a_z in rugosita'
+  corr(RMS a_z, v)           = +0.413   <- quanto a_z e v sono confuse fra loro
+  corr parziale (a v fissa)  = +0.532   <- quanto conta a_z A PARITA' di velocita' (deve essere grande)
+  copertura griglia (v x a_z)= 94%      <- alta = disegno fattoriale, bassa = diagonale
+
+  Tabella incrociata: xi target medio per bin di velocita' e di RMS a_z
+  RMS \ v [km/h]         14       25       37       57       89
+  -------------------------------------------------------------
+            7.38      0.216    0.248    0.329    0.324    0.350
+            0.94      0.145    0.153    0.185    0.270    0.319
+            0.36      0.085    0.090    0.094    0.119    0.135
+            0.21      0.083    0.083    0.089    0.091    0.096
+            0.11      0.082    0.082    0.083    0.084    0.087
+  ('--' = cella VUOTA: combinazione mai vista in addestramento; se le celle piene
+   stanno su una diagonale, velocita' e accelerazione NON sono separabili)
+
+================================================================================================
+ 4) INDICI DI SANITA' FISICA   [target = xi* ottimo]
+================================================================================================
+  [    ] quota di xi spiegata da a_z  = 0.659   (ora NON deve essere 0: se lo e', la rete ignora la strada)
+          variazione di xi lungo a_z  = 0.0000
+          variazione di xi lungo v    = 0.0000
+  [NO  ] errore closed-loop |xi - xi*| = 0.1619   (e' l'indicatore che conta ora)
+  [NO  ] escursione con la strada: rete 0.000 contro target 0.243  (0% del necessario)
+  [    ] frazione monotona in v       = 53.8%  (non piu' un requisito: la tenuta puo' chiedere di irrigidire)
+  [    ] distanza dal baseline √2     = 0.2698   (se ~0 la correzione appresa non sta facendo nulla)
+
+  Sensibilita' d(xi)/d(log10 RMS a_z), crossover r=√2 a 53 km/h:
+        sotto il crossover : -0.0000
+        sopra il crossover : -0.0000
+        (sopra r=√2 una sensibilita' POSITIVA e' un anello di retroazione
+         positivo, ma ora puo' essere legittimo: se xi* stesso sale con la
+         rugosita', l'anello e' voluto. Va giudicato contro xi*, non da solo.)
+
+  Figura diagnostica salvata: diagnostica_xi.png

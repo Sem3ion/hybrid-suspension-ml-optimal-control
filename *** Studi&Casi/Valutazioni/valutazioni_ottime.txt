@@ -1,0 +1,2217 @@
+/usr/local/bin/python3 "/Users/andreaalessandri/Desktop/ML - Progetto/Codice/main.py"
+andreaalessandri@MacMini2020 / % /usr/local/bin/python3 "/Users/andreaalessandri/Desktop/ML - Progetto/Codice/main.py"
+==========================================================================================
+ SOSPENSIONE 2 GDL (PEUGEOT 207) — CONTROLLO APPRESO (ML)
+ Legge di riferimento (etichette): OTTIMO VINCOLATO (comfort ISO 2631 sotto i limiti hardware)
+ omega_n = 9.41 rad/s (1.50 Hz)   |   crossover a r = √2 ≈ 1.414
+ Sistema: Darwin 24.6.0 / arm64 / Python 3.14.3 / codifica stampe utf-8
+==========================================================================================
+    HW: Apple Silicon GPU (MPS)
+    Core: 8 totali -> uso 4 performance (salto 4 efficiency)
+    Operatori verificati su mps (conv dilatate, batchnorm, riduzione depthwise, forward+backward)
+
+[1] Caricamento tracce e generazione etichette (parallela sui core)...
+  [ok] 3 tracce reali -> 2 train / 1 validazione (thessaloniki_19_11_2023.pkl)
+    [!] larisa_07_10_2023.pkl: cadenza reale 100.1 Hz (jitter 15.3%) contro cfg.freq_campion = 100 Hz
+        ricampionata su griglia uniforme: 271177 -> 271314 campioni. Senza questo, filtri e integrazioni lavorerebbero alla frequenza sbagliata.
+    [!] thessaloniki_01_10_2023.pkl: cadenza reale 100.1 Hz (jitter 13.5%) contro cfg.freq_campion = 100 Hz
+        ricampionata su griglia uniforme: 229148 -> 229200 campioni. Senza questo, filtri e integrazioni lavorerebbero alla frequenza sbagliata.
+    [!] thessaloniki_19_11_2023.pkl: cadenza reale 100.1 Hz (jitter 14.7%) contro cfg.freq_campion = 100 Hz
+        ricampionata su griglia uniforme: 252392 -> 252468 campioni. Senza questo, filtri e integrazioni lavorerebbero alla frequenza sbagliata.
+    Filtro ISO 2631-1 Wk verificato sulla Tabella 3 della norma: errore massimo 0.44%
+    Etichette da OTTIMIZZAZIONE VINCOLATA: si cerca la coppia (xi, kp) che
+    minimizza il comfort ISO 2631 Wk restando entro i limiti hardware.
+    Limiti dei vincoli — ognuno = limite di PICCO / fattore di picco:
+      GOMMA  picco  15.38 mm = (m_cassa+m_ruota)*g/k_gomma = (260+38)*9.807/190000   [deflessione statica: oltre, la ruota stacca]
+             fattore 3.30 (ripiego cfg)  ->  RMS ammesso 4.66 mm
+      CORSA  picco  80 mm = cfg.corsa_disponibile   [rattle space — VALORE NON VERIFICATO sulla 207]
+             fattore 3.30 (ripiego cfg)  ->  RMS ammesso 24.24 mm
+      FORZA  picco   1500 N  = cfg.forza_max   [saturazione attuatore, spec hardware]
+             fattore 3.30 (ripiego cfg)  ->  RMS ammesso 455 N
+      COMFORT scala 0.315 m/s^2 = cfg.xi_ott_comfort_rif   [soglia ISO 2631-1, non un limite: e' la scala dell'obiettivo]
+    Griglia 21x15 = 315 candidati, finestra 2 s, penalita' 1000
+    Data augmentation: 48 strade sintetiche ISO 8608 (buche/dossi bruschi, gradini, salite/discese)
+    Griglia fattoriale: 5 classi x 5 velocita' = 25 celle | training 21 celle | validazione 4 celle (DISGIUNTE)
+    Crossover r=√2 a v ≈ 53 km/h: le tracce a velocita' variabile lo attraversano a rugosita' costante
+      train  1: classe E (x1.09)  v   36-  42 km/h [costante]  RMS a_z= 5.13 m/s^2  ostacoli= 5  n_max=2.83 c/m
+      train  2: classe B (x1.10)  v   20-  97 km/h [rampa   ]  RMS a_z= 1.17 m/s^2  ostacoli=15  n_max=1.48 c/m
+      train  3: classe C (x0.77)  v   42- 100 km/h [urbano  ]  RMS a_z= 1.99 m/s^2  ostacoli= 7  n_max=1.43 c/m
+      train  4: classe C (x1.71)  v   19-  24 km/h [costante]  RMS a_z= 1.59 m/s^2  ostacoli= 9  n_max=2.83 c/m
+      train  5: classe E (x1.86)  v   73-  79 km/h [costante]  RMS a_z= 9.20 m/s^2  ostacoli=21  n_max=1.83 c/m
+      train  6: classe B (x1.29)  v   19-  24 km/h [costante]  RMS a_z= 0.71 m/s^2  ostacoli= 3  n_max=2.83 c/m
+      train  7: classe A (x1.65)  v   19-  78 km/h [rampa   ]  RMS a_z= 0.82 m/s^2  ostacoli= 5  n_max=1.86 c/m
+      train  8: classe E (x1.08)  v   95- 100 km/h [costante]  RMS a_z= 8.23 m/s^2  ostacoli=20  n_max=1.44 c/m
+      train  9: classe B (x0.78)  v   42-  99 km/h [urbano  ]  RMS a_z= 1.56 m/s^2  ostacoli=15  n_max=1.45 c/m
+      train 10: classe A (x1.17)  v   30-  75 km/h [urbano  ]  RMS a_z= 0.72 m/s^2  ostacoli=10  n_max=1.91 c/m
+      train 11: classe D (x1.27)  v   24-  58 km/h [rampa   ]  RMS a_z= 3.53 m/s^2  ostacoli=14  n_max=2.47 c/m
+      train 12: classe A (x1.71)  v   11-  78 km/h [sweep   ]  RMS a_z= 0.54 m/s^2  ostacoli= 2  n_max=1.85 c/m
+      train 13: classe D (x1.35)  v   37-  89 km/h [rampa   ]  RMS a_z= 4.13 m/s^2  ostacoli=16  n_max=1.63 c/m
+      train 14: classe C (x0.99)  v   11-  87 km/h [sweep   ]  RMS a_z= 2.09 m/s^2  ostacoli=12  n_max=1.66 c/m
+      train 15: classe D (x1.77)  v   11-  75 km/h [sweep   ]  RMS a_z= 4.38 m/s^2  ostacoli=30  n_max=1.91 c/m
+      train 16: classe C (x1.91)  v   54-  60 km/h [costante]  RMS a_z= 2.60 m/s^2  ostacoli= 7  n_max=2.40 c/m
+      train 17: classe E (x0.68)  v   32-  75 km/h [urbano  ]  RMS a_z= 4.91 m/s^2  ostacoli= 9  n_max=1.91 c/m
+      train 18: classe B (x1.88)  v   30-  75 km/h [urbano  ]  RMS a_z= 1.65 m/s^2  ostacoli=12  n_max=1.92 c/m
+      train 19: classe B (x1.69)  v   21-  52 km/h [urbano  ]  RMS a_z= 1.09 m/s^2  ostacoli= 4  n_max=2.78 c/m
+      train 20: classe A (x0.97)  v   46- 108 km/h [sweep   ]  RMS a_z= 0.61 m/s^2  ostacoli= 5  n_max=1.34 c/m
+      train 21: classe D (x1.85)  v   73-  79 km/h [costante]  RMS a_z= 5.49 m/s^2  ostacoli=28  n_max=1.82 c/m
+      train 22: classe E (x1.25)  v   36-  42 km/h [costante]  RMS a_z= 5.49 m/s^2  ostacoli=10  n_max=2.83 c/m
+      train 23: classe B (x1.63)  v   95- 101 km/h [costante]  RMS a_z= 2.27 m/s^2  ostacoli=22  n_max=1.43 c/m
+      train 24: classe C (x1.32)  v   73-  79 km/h [costante]  RMS a_z= 2.57 m/s^2  ostacoli= 7  n_max=1.82 c/m
+      train 25: classe C (x1.33)  v   21-  93 km/h [rampa   ]  RMS a_z= 1.93 m/s^2  ostacoli=10  n_max=1.55 c/m
+      train 26: classe E (x1.01)  v   41-  92 km/h [sweep   ]  RMS a_z= 6.42 m/s^2  ostacoli=13  n_max=1.57 c/m
+      train 27: classe B (x1.78)  v   20-  25 km/h [costante]  RMS a_z= 1.22 m/s^2  ostacoli= 8  n_max=2.83 c/m
+      train 28: classe A (x1.37)  v   73-  79 km/h [costante]  RMS a_z= 1.24 m/s^2  ostacoli=11  n_max=1.82 c/m
+      train 29: classe E (x1.88)  v   94-  99 km/h [costante]  RMS a_z=10.82 m/s^2  ostacoli=30  n_max=1.45 c/m
+      train 30: classe B (x1.49)  v   30-  77 km/h [rampa   ]  RMS a_z= 1.69 m/s^2  ostacoli=14  n_max=1.88 c/m
+      train 31: classe A (x1.81)  v   55-  61 km/h [costante]  RMS a_z= 1.15 m/s^2  ostacoli=14  n_max=2.36 c/m
+      train 32: classe D (x1.41)  v   32-  74 km/h [urbano  ]  RMS a_z= 3.94 m/s^2  ostacoli=15  n_max=1.95 c/m
+      train 33: classe A (x0.87)  v   18-  25 km/h [costante]  RMS a_z= 0.33 m/s^2  ostacoli= 1  n_max=2.83 c/m
+      train 34: classe D (x0.98)  v   37-  42 km/h [costante]  RMS a_z= 2.71 m/s^2  ostacoli= 6  n_max=2.83 c/m
+      train 35: classe C (x1.67)  v   22-  53 km/h [urbano  ]  RMS a_z= 1.81 m/s^2  ostacoli= 3  n_max=2.70 c/m
+      train 36: classe D (x1.03)  v   19-  25 km/h [costante]  RMS a_z= 2.14 m/s^2  ostacoli= 4  n_max=2.83 c/m
+      train 37: classe C (x1.07)  v   55-  61 km/h [costante]  RMS a_z= 2.03 m/s^2  ostacoli=10  n_max=2.37 c/m
+      train 38: classe E (x1.49)  v   27-  84 km/h [sweep   ]  RMS a_z= 7.21 m/s^2  ostacoli=19  n_max=1.71 c/m
+      train 39: classe B (x0.81)  v   21-  91 km/h [sweep   ]  RMS a_z= 1.52 m/s^2  ostacoli=16  n_max=1.58 c/m
+      train 40: classe B (x0.63)  v   38-  85 km/h [rampa   ]  RMS a_z= 1.26 m/s^2  ostacoli=12  n_max=1.69 c/m
+      train 41: classe A (x1.73)  v   19-  99 km/h [rampa   ]  RMS a_z= 0.72 m/s^2  ostacoli=10  n_max=1.46 c/m
+      train 42: classe D (x0.63)  v   73-  78 km/h [costante]  RMS a_z= 3.15 m/s^2  ostacoli=10  n_max=1.84 c/m
+      train 43: classe E (x1.04)  v   11-  81 km/h [sweep   ]  RMS a_z= 5.65 m/s^2  ostacoli=16  n_max=1.77 c/m
+      train 44: classe B (x1.59)  v   95- 101 km/h [costante]  RMS a_z= 1.77 m/s^2  ostacoli=10  n_max=1.43 c/m
+      train 45: classe C (x1.08)  v   73-  79 km/h [costante]  RMS a_z= 2.88 m/s^2  ostacoli=22  n_max=1.82 c/m
+      train 46: classe C (x1.05)  v   18-  25 km/h [costante]  RMS a_z= 0.87 m/s^2  ostacoli= 0  n_max=2.83 c/m
+      train 47: classe E (x0.72)  v   73-  78 km/h [costante]  RMS a_z= 6.13 m/s^2  ostacoli=14  n_max=1.84 c/m
+      train 48: classe B (x1.34)  v   19-  24 km/h [costante]  RMS a_z= 1.07 m/s^2  ostacoli= 9  n_max=2.83 c/m
+      valid  1: classe C (x0.62)  v   20-  98 km/h [rampa   ]  RMS a_z= 1.81 m/s^2  ostacoli=18  n_max=1.48 c/m
+      valid  2: classe E (x0.62)  v   19-  24 km/h [costante]  RMS a_z= 2.92 m/s^2  ostacoli= 3  n_max=2.83 c/m
+      valid  3: classe A (x1.44)  v   11-  86 km/h [sweep   ]  RMS a_z= 0.46 m/s^2  ostacoli= 3  n_max=1.68 c/m
+      valid  4: classe D (x1.08)  v   53- 119 km/h [urbano  ]  RMS a_z= 4.59 m/s^2  ostacoli=21  n_max=1.21 c/m
+    Campioni TRAIN      : 566864  (50 tracce = reali + sintetiche)
+    Etichetta FORZA     : |F*| max 1500 N su un limite di 1500 N  |  satura nel 0.16% dei campioni
+    Campioni VALID reale: 157458  (3a traccia registrata, mai vista)
+    Campioni VALID sint.: 17200  (4 strade su celle classe x velocita' DISGIUNTE dal training)
+    Normalizzazione (dai dati di training): Normalizzatore(a_z: media=+0.0009 std=2.1060 | v: media=12.037 std=6.986)
+    Salvata in normalizzatore.json
+
+[2] Addestramento di DUE reti separate (Loss() e Optimizer indipendenti)...
+    Scarto etichette dal baseline 'comfort' [logit]: mediana 1.82 | p90 3.31 | p99 4.03 | max 8.77
+    -> alpha suggerito (max scarto +10%) = 9.65   |   alpha finale in config = 7.00
+    [!] alpha finale TROPPO PICCOLO: la correzione satura e la rete non puo' raggiungere xi*. Alzo a 9.65.
+    Rete xi = sigmoid(L(v) + alpha*Delta(a_z,v)) con alpha da 0.30 a 9.65 (curriculum)
+    Regolarizzazione: rete xi lr=1e-03 wd=3e-04  |  rete forza lr=1e-04 wd=1e-05
+    loss forza: Huber con delta = 0.1779 (= 2 x 1.4826 x MAD = 2 x 0.0890)  |  curtosi in eccesso del target 8.1  |  14.5% dei campioni nel ramo lineare
+    loss xi: MSE pesata per strato (target senza code, ma con una massa al minimo del damper: serve il peso, non la robustezza)
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 0.3000
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-18.847828 max=6.797626 mean=-1.458433
+beta*Delta Intoccato      min=-5.654348 max=2.039288 mean=-0.437530
+Delta Clampato [-1,1]     min=-1.000000 max=1.000000 mean=-0.133726
+beta*Delta Clampato       min=-0.300000 max=0.300000 mean=-0.040118
+L(v) + beta*Delta         min=-9.130447 max=-1.436811 mean=-3.913629
+L(v) + beta*Delta Clampato min=-3.776099 max=-3.176099 mean=-3.516216
+    Epoca 01/12  (alpha=0.30)  |  RETE xi: Loss(Train)=0.00798  Loss(Valid)=0.01293  |  RETE F: Loss(Train)=0.00373  Loss(Valid)=0.00187
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 1.6352
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-3.548810 max=1.573834 mean=-0.393216
+beta*Delta Intoccato      min=-5.802987 max=2.573520 mean=-0.642983
+Delta Clampato [-1,1]     min=-1.000000 max=1.000000 mean=-0.082933
+beta*Delta Clampato       min=-1.635192 max=1.635192 mean=-0.135611
+L(v) + beta*Delta         min=-9.279085 max=-0.902579 mean=-4.119082
+L(v) + beta*Delta Clampato min=-5.111291 max=-1.840907 mean=-3.611710
+
+DEBUG EPOCA 3
+Coefficiente Alpha (beta buffer) = 2.9704
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-3.199518 max=0.769884 mean=-0.140171
+beta*Delta Intoccato      min=-9.503796 max=2.286852 mean=-0.416363
+Delta Clampato [-1,1]     min=-1.000000 max=0.769884 mean=-0.036430
+beta*Delta Clampato       min=-2.970384 max=2.286852 mean=-0.108212
+L(v) + beta*Delta         min=-12.979895 max=-1.189247 mean=-3.892462
+L(v) + beta*Delta Clampato min=-6.446483 max=-1.189247 mean=-3.584311
+    Epoca 03/12  (alpha=2.97)  |  RETE xi: Loss(Train)=0.00467  Loss(Valid)=0.01517  |  RETE F: Loss(Train)=0.00155  Loss(Valid)=0.00196
+
+DEBUG EPOCA 4
+Coefficiente Alpha (beta buffer) = 4.3056
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-2.512706 max=0.731226 mean=-0.258056
+beta*Delta Intoccato      min=-10.818645 max=3.148348 mean=-1.111080
+Delta Clampato [-1,1]     min=-1.000000 max=0.731226 mean=-0.198488
+beta*Delta Clampato       min=-4.305576 max=3.148348 mean=-0.854604
+L(v) + beta*Delta         min=-14.294744 max=-0.327750 mean=-4.587179
+L(v) + beta*Delta Clampato min=-7.781674 max=-0.327750 mean=-4.330702
+
+DEBUG EPOCA 5
+Coefficiente Alpha (beta buffer) = 5.6408
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-1.324497 max=0.558604 mean=-0.254309
+beta*Delta Intoccato      min=-7.471178 max=3.150958 mean=-1.434499
+Delta Clampato [-1,1]     min=-1.000000 max=0.558604 mean=-0.242201
+beta*Delta Clampato       min=-5.640768 max=3.150958 mean=-1.366198
+L(v) + beta*Delta         min=-10.947276 max=-0.325141 mean=-4.910598
+L(v) + beta*Delta Clampato min=-9.116867 max=-0.325141 mean=-4.842297
+
+DEBUG EPOCA 6
+Coefficiente Alpha (beta buffer) = 6.9760
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-1.059534 max=0.459717 mean=-0.260422
+beta*Delta Intoccato      min=-7.391267 max=3.206970 mean=-1.816691
+Delta Clampato [-1,1]     min=-1.000000 max=0.459717 mean=-0.259975
+beta*Delta Clampato       min=-6.975960 max=3.206970 mean=-1.813574
+L(v) + beta*Delta         min=-10.867366 max=-0.269128 mean=-5.292790
+L(v) + beta*Delta Clampato min=-10.452059 max=-0.269128 mean=-5.289673
+    Epoca 06/12  (alpha=6.98)  |  RETE xi: Loss(Train)=0.00202  Loss(Valid)=0.01579  |  RETE F: Loss(Train)=0.00115  Loss(Valid)=0.00187
+
+DEBUG EPOCA 7
+Coefficiente Alpha (beta buffer) = 8.3112
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.680320 max=0.268358 mean=-0.207139
+beta*Delta Intoccato      min=-5.654243 max=2.230366 mean=-1.721564
+Delta Clampato [-1,1]     min=-0.680320 max=0.268358 mean=-0.207139
+beta*Delta Clampato       min=-5.654243 max=2.230366 mean=-1.721564
+L(v) + beta*Delta         min=-9.130342 max=-1.245733 mean=-5.197662
+L(v) + beta*Delta Clampato min=-9.130342 max=-1.245733 mean=-5.197662
+
+DEBUG EPOCA 8
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.431890 max=0.231049 mean=-0.137123
+beta*Delta Intoccato      min=-4.166157 max=2.228780 mean=-1.322732
+Delta Clampato [-1,1]     min=-0.431890 max=0.231049 mean=-0.137123
+beta*Delta Clampato       min=-4.166157 max=2.228780 mean=-1.322732
+L(v) + beta*Delta         min=-7.642256 max=-1.247319 mean=-4.798831
+L(v) + beta*Delta Clampato min=-7.642256 max=-1.247319 mean=-4.798831
+
+DEBUG EPOCA 9
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.495361 max=0.221335 mean=-0.103022
+beta*Delta Intoccato      min=-4.778426 max=2.135077 mean=-0.993789
+Delta Clampato [-1,1]     min=-0.495361 max=0.221335 mean=-0.103022
+beta*Delta Clampato       min=-4.778426 max=2.135077 mean=-0.993789
+L(v) + beta*Delta         min=-8.254524 max=-1.341021 mean=-4.469888
+L(v) + beta*Delta Clampato min=-8.254524 max=-1.341021 mean=-4.469888
+    Epoca 09/12  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00117  Loss(Valid)=0.01635  |  RETE F: Loss(Train)=0.00093  Loss(Valid)=0.00189
+
+DEBUG EPOCA 10
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.431969 max=0.221757 mean=-0.127473
+beta*Delta Intoccato      min=-4.166924 max=2.139141 mean=-1.229646
+Delta Clampato [-1,1]     min=-0.431969 max=0.221757 mean=-0.127473
+beta*Delta Clampato       min=-4.166924 max=2.139141 mean=-1.229646
+L(v) + beta*Delta         min=-7.643023 max=-1.336958 mean=-4.705745
+L(v) + beta*Delta Clampato min=-7.643023 max=-1.336958 mean=-4.705745
+
+DEBUG EPOCA 11
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.640114 max=0.198580 mean=-0.207476
+beta*Delta Intoccato      min=-6.174759 max=1.915570 mean=-2.001383
+Delta Clampato [-1,1]     min=-0.640114 max=0.198580 mean=-0.207476
+beta*Delta Clampato       min=-6.174759 max=1.915570 mean=-2.001383
+L(v) + beta*Delta         min=-9.650858 max=-1.560529 mean=-5.477481
+L(v) + beta*Delta Clampato min=-9.650858 max=-1.560529 mean=-5.477481
+
+DEBUG EPOCA 12
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.506418 max=0.278355 mean=-0.139550
+beta*Delta Intoccato      min=-4.885081 max=2.685107 mean=-1.346149
+Delta Clampato [-1,1]     min=-0.506418 max=0.278355 mean=-0.139550
+beta*Delta Clampato       min=-4.885081 max=2.685107 mean=-1.346149
+L(v) + beta*Delta         min=-8.361180 max=-0.790992 mean=-4.822248
+L(v) + beta*Delta Clampato min=-8.361180 max=-0.790992 mean=-4.822248
+    Epoca 12/12  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00071  Loss(Valid)=0.01555  |  RETE F: Loss(Train)=0.00080  Loss(Valid)=0.00200
+    Rollout su 48 strade sintetiche NUOVE (seme 1234+4441, celle identiche al training) + 2 registrate
+
+[2b] DAgger: allineamento fra dati di addestramento e stati visitati
+    Preparate 50 strade per l'aggregazione (20 s ciascuna), di cui 48 con strada VERA nota; etichette dell'esperto calcolate una volta
+    Validazione ricalibrata su rollout closed-loop di 4 strade di validazione (la vecchia era sulla distribuzione passiva)
+    giro 1/5  beta=1.00  |  RMS a_z visitata 3.600 contro 2.106 nel dataset  |  |xi_applicato - xi*| = 0.0000  |  campioni 566864 -> 653945
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-189.605667 max=-26.091631 mean=-71.365753
+beta*Delta Intoccato      min=-1829.001465 max=-251.688858 mean=-688.418640
+Delta Clampato [-1,1]     min=-1.000000 max=-1.000000 mean=-1.000000
+beta*Delta Clampato       min=-9.646344 max=-9.646344 mean=-9.646344
+L(v) + beta*Delta         min=-1832.477539 max=-255.164963 mean=-691.894775
+L(v) + beta*Delta Clampato min=-13.122443 max=-13.122443 mean=-13.122443
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12392  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00190  Loss(Valid)=0.00200
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-172.703400 max=-19.988482 mean=-70.774872
+beta*Delta Intoccato      min=-1665.956421 max=-192.815765 mean=-682.718811
+Delta Clampato [-1,1]     min=-1.000000 max=-1.000000 mean=-1.000000
+beta*Delta Clampato       min=-9.646344 max=-9.646344 mean=-9.646344
+L(v) + beta*Delta         min=-1669.432495 max=-196.291870 mean=-686.194885
+L(v) + beta*Delta Clampato min=-13.122443 max=-13.122443 mean=-13.122443
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12395  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00161  Loss(Valid)=0.00190
+    giro 2/5  beta=0.40  |  RMS a_z visitata 3.007 contro 2.375 nel dataset  |  |xi_applicato - xi*| = 0.1022  |  campioni 566864 -> 741026
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-166.038177 max=-23.101429 mean=-70.486664
+beta*Delta Intoccato      min=-1601.661377 max=-222.844330 mean=-679.938599
+Delta Clampato [-1,1]     min=-1.000000 max=-1.000000 mean=-1.000000
+beta*Delta Clampato       min=-9.646344 max=-9.646344 mean=-9.646344
+L(v) + beta*Delta         min=-1605.137451 max=-226.320435 mean=-683.414673
+L(v) + beta*Delta Clampato min=-13.122443 max=-13.122443 mean=-13.122443
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12437  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00154  Loss(Valid)=0.00194
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-173.429947 max=-24.809315 mean=-70.292343
+beta*Delta Intoccato      min=-1672.964966 max=-239.319183 mean=-678.064148
+Delta Clampato [-1,1]     min=-1.000000 max=-1.000000 mean=-1.000000
+beta*Delta Clampato       min=-9.646344 max=-9.646344 mean=-9.646344
+L(v) + beta*Delta         min=-1676.441040 max=-242.795288 mean=-681.540283
+L(v) + beta*Delta Clampato min=-13.122443 max=-13.122443 mean=-13.122443
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12437  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00139  Loss(Valid)=0.00163
+    giro 3/5  beta=0.16  |  RMS a_z visitata 2.882 contro 2.465 nel dataset  |  |xi_applicato - xi*| = 0.1431  |  campioni 566864 -> 828107
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-164.225327 max=-24.679464 mean=-69.337723
+beta*Delta Intoccato      min=-1584.174072 max=-238.066605 mean=-668.855591
+Delta Clampato [-1,1]     min=-1.000000 max=-1.000000 mean=-1.000000
+beta*Delta Clampato       min=-9.646344 max=-9.646344 mean=-9.646344
+L(v) + beta*Delta         min=-1587.650146 max=-241.542709 mean=-672.331665
+L(v) + beta*Delta Clampato min=-13.122443 max=-13.122443 mean=-13.122443
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12466  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00135  Loss(Valid)=0.00184
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-175.774017 max=-28.956886 mean=-69.424698
+beta*Delta Intoccato      min=-1695.576660 max=-279.328094 mean=-669.694580
+Delta Clampato [-1,1]     min=-1.000000 max=-1.000000 mean=-1.000000
+beta*Delta Clampato       min=-9.646344 max=-9.646344 mean=-9.646344
+L(v) + beta*Delta         min=-1699.052734 max=-282.804199 mean=-673.170654
+L(v) + beta*Delta Clampato min=-13.122443 max=-13.122443 mean=-13.122443
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12466  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00123  Loss(Valid)=0.00169
+    giro 4/5  beta=0.06  |  RMS a_z visitata 2.884 contro 2.519 nel dataset  |  |xi_applicato - xi*| = 0.1594  |  campioni 566864 -> 915188
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-184.099274 max=-28.478407 mean=-69.668114
+beta*Delta Intoccato      min=-1775.885010 max=-274.712524 mean=-672.042603
+Delta Clampato [-1,1]     min=-1.000000 max=-1.000000 mean=-1.000000
+beta*Delta Clampato       min=-9.646344 max=-9.646344 mean=-9.646344
+L(v) + beta*Delta         min=-1779.361084 max=-278.188629 mean=-675.518677
+L(v) + beta*Delta Clampato min=-13.122443 max=-13.122443 mean=-13.122443
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12488  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00120  Loss(Valid)=0.00199
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-163.093491 max=-28.180918 mean=-68.321983
+beta*Delta Intoccato      min=-1573.255981 max=-271.842834 mean=-659.057373
+Delta Clampato [-1,1]     min=-1.000000 max=-1.000000 mean=-1.000000
+beta*Delta Clampato       min=-9.646344 max=-9.646344 mean=-9.646344
+L(v) + beta*Delta         min=-1576.732056 max=-275.318939 mean=-662.533447
+L(v) + beta*Delta Clampato min=-13.122443 max=-13.122443 mean=-13.122443
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12488  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00109  Loss(Valid)=0.00192
+    giro 5/5  beta=0.03  |  RMS a_z visitata 2.904 contro 2.562 nel dataset  |  |xi_applicato - xi*| = 0.1660  |  campioni 566864 -> 1002269
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-164.833282 max=-20.658575 mean=-67.828079
+beta*Delta Intoccato      min=-1590.038574 max=-199.279724 mean=-654.292969
+Delta Clampato [-1,1]     min=-1.000000 max=-1.000000 mean=-1.000000
+beta*Delta Clampato       min=-9.646344 max=-9.646344 mean=-9.646344
+L(v) + beta*Delta         min=-1593.514648 max=-202.755829 mean=-657.769043
+L(v) + beta*Delta Clampato min=-13.122443 max=-13.122443 mean=-13.122443
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12505  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00105  Loss(Valid)=0.00193
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-173.701385 max=-26.427179 mean=-67.410187
+beta*Delta Intoccato      min=-1675.583374 max=-254.925674 mean=-650.261841
+Delta Clampato [-1,1]     min=-1.000000 max=-1.000000 mean=-1.000000
+beta*Delta Clampato       min=-9.646344 max=-9.646344 mean=-9.646344
+L(v) + beta*Delta         min=-1679.059448 max=-258.401764 mean=-653.737915
+L(v) + beta*Delta Clampato min=-13.122443 max=-13.122443 mean=-13.122443
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.12505  Loss(Valid)=0.13078  |  RETE F: Loss(Train)=0.00097  Loss(Valid)=0.00221
+
+==========================================================================================
+ VALIDAZIONE — confronto fra valori APPRESI e valori CALCOLATI, su dati mai visti
+==========================================================================================
+ xi predetto / F predetta : APPRESO dalle reti (solo a_z passata + v)
+ xi* / F* di riferimento  : CALCOLATO per ottimizzazione (conosce la strada e lo stato vero)
+
+ [A] REGISTRATA: thessaloniki_19_11_2023.pkl  |  2525 s  |  v 0-55 km/h  |  RMS a_z 0.32 m/s^2  |  rugosita' equivalente classe ISO B
+   xi(t)    -> R^2: -0.1039 | RMSE: 0.0952 | MAE: 0.0292 | dev.std target: 0.0906
+   forza(t) -> R^2: +0.7414 | RMSE: 95.3 N | MAE: 61.9 N
+   picchi   -> |F| max: target 1421 N, ML 896 N (-37%) | margine ML sul limite 40%
+                saturazione a ±1500 N: target 0.00%, ML 0.00% | sui picchi (|F*|>50% del max) il ML sta -406 N
+
+ [B] SINTETICHE, celle classe x velocita' DISGIUNTE dal training
+     valid  1 ISO C(x0.62) 20-98 km/h [rampa]; valid  2 ISO E(x0.62) 19-24 km/h [costante]; valid  3 ISO A(x1.44) 11-86 km/h [sweep]; valid  4 ISO D(x1.08) 53-119 km/h [urbano]
+   xi(t)    -> R^2: -2.4456 | RMSE: 0.2280 | MAE: 0.1921 | dev.std target: 0.1228
+   forza(t) -> R^2: +0.8093 | RMSE: 108.2 N | MAE: 60.4 N
+   picchi   -> |F| max: target 1500 N, ML 1500 N (+0%) | margine ML sul limite 0%
+                saturazione a ±1500 N: target 0.49%, ML 0.10% | sui picchi (|F*|>50% del max) il ML sta -307 N
+     ^ [B] e' il test severo: rugosita' x velocita' mai viste insieme.
+
+ |forza| max prevista dal ML: 895.5 N  (limite 1500 N, margine 40%)
+
+ COMFORT in CLOSED-LOOP — RMS accelerazione cassa
+   dati: thessaloniki_19_11_2023.pkl, primi 60 s  (v 0-15 km/h, rugosita' equivalente classe ISO B)
+   passiva  0.166 m/s^2
+   ML       0.039 m/s^2   (+76.4% vs passiva)
+   ottimo   0.038 m/s^2   (+76.9% vs passiva)  <- il tetto raggiungibile con le etichette
+
+--------------------------------------------------------------------------
+ ETICHETTE OTTIME: xi* in funzione della RUGOSITA' (RMS a_z) e della velocita'   [strade sintetiche]
+--------------------------------------------------------------------------
+RMS a_z        | v [km/h]  | xi* medio  | |forza| [N]
+0.12-0.67      | 41.4      | 0.114      | 134
+0.67-2.15      | 51.2      | 0.325      | 100
+2.15-3.11      | 38.7      | 0.336      | 181
+3.11-7.95      | 80.3      | 0.321      | 178
+ TENUTA DI STRADA su thessaloniki_19_11_2023.pkl (60 s) — RMS deflessione pneumatico: passiva 0.24 mm -> ML 0.08 mm   (limite ammesso 4.66 mm)
+
+ BILANCIO ENERGETICO — integrali su 60 s di thessaloniki_19_11_2023.pkl
+   IPOTESI  damper    : damper IDRAULICO: il suo calore NON e' recuperabile ed e' escluso dal recupero
+   IPOTESI  attuatore : attuatore ideale in trazione (eta_attuatore = 100%): il costo e' un LIMITE INFERIORE
+   CONVENZIONE: le voci misurate sono MODULI (>=0), il verso e' nel nome. Il bilancio ha segno
+   dal punto di vista della BATTERIA: <0 esce, >0 rientra. I joule scalano con la durata: non sono una potenza.
+   MECCANICA  damper dissipato in calore nell'olio — PERSO, fuori bilancio :     3.9 J
+   MECCANICA  attuatore, lavoro fatto sul veicolo (spinge)                :     7.8 J
+   MECCANICA  attuatore, lavoro ricevuto dal veicolo (frena)              :    12.2 J
+   ELETTRICO  ADDEBITO  = lavoro in spinta / eta_attuatore                :    -7.8 J   (esce dalla batteria)
+   ELETTRICO  ACCREDITO = eta*(ATTUATORE assorbita)                      :    +7.3 J   (rientra in batteria)
+   ELETTRICO  NETTO     = accredito - addebito                            :    -0.5 J  -> COSTO NETTO (esce dalla batteria piu' di quanto rientra)
+   [sensibilita'] con le perdite di trazione al 60% come il generatore, il netto sarebbe -5.7 J
+   [sensibilita'] con un damper ELETTROMAGNETICO al posto dell'idraulico il netto sarebbe +1.8 J
+################################################################################################
+#  DIAGNOSTICA FISICA — xi deve seguire xi* ottimo: dipende dalla RUGOSITA' (da a_z) e dalla velocita'
+#  2026-07-31 11:32   |   vincolo strutturale: ATTIVO alpha=9.65   |   metodo_freq: velocita
+################################################################################################
+
+================================================================================================
+ 1) MAPPA xi(v, RMS a_z) — OPEN LOOP
+================================================================================================
+ DATI      : banca di finestre di a_z generate col modello PASSIVO su profili ISO
+             8608 classi B,C,D,E a 29/58/86 km/h, poi RISCALATE al livello di RMS
+             indicato in riga. La FORMA spettrale resta realistica, cambia solo
+             l'ampiezza: e' un esperimento controllato, una variabile per volta.
+ xi        : APPRESO dalla rete (uscita, non etichetta). Media su tutte le finestre.
+ NB        : e' OPEN LOOP — a_z e' imposta dall'esterno, non prodotta dal controllo.
+             Per il comportamento reale vedi la mappa closed-loop al punto 2.
+    Righe = livello di a_z, colonne = velocita'. Quindi:
+      lungo una RIGA (a_z fissa, v che cresce) xi deve SCENDERE da xi_max a xi_min;
+      lungo una COLONNA (v fissa, a_z che cresce) xi deve restare QUASI COSTANTE.
+
+  RMS a_z \ v [km/h]      14     22     29     36     43     50     58     65     72     79     86     94    101    108
+  ---------------------------------------------------------------------------------------------------------------------
+     6.00 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     3.88 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     2.51 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     1.63 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     1.05 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.68 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.44 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.29 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.18 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.12 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.08 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+     0.05 m/s^2        0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082  0.082
+  ---------------------------------------------------------------------------------------------------------------------
+  BASELINE √2 (solo v)   0.683  0.662  0.629  0.580  0.514  0.434  0.349  0.270  0.207  0.162  0.131  0.111  0.099  0.092
+  [range damper: xi_min=0.082  xi_max=0.716]
+
+================================================================================================
+ 2) xi MEDIO IN CLOSED-LOOP su strade ISO 8608 (anello di retroazione CHIUSO)
+================================================================================================
+ DATI      : 5 profili ISO 8608 (classi A, B, C, D, E) x 5 velocita' costanti, 12 s ciascuno,
+             generati come le strade di TRAINING (ostacoli, pendenze, spettro ISO).
+             Ogni cella e' la MEDIA di 5 realizzazioni con semi diversi:
+             con una sola strada per cella si legge il sorteggio degli ostacoli.
+             Scartato il 20% iniziale (warm-up: la finestra parte piena di zeri).
+ xi rete   : APPRESO — la rete legge la propria a_z controllata e comanda.
+ xi* target: CALCOLATO su QUELLA strada per ottimizzazione vincolata (conosce z_r).
+  classe \ v [km/h]         22       40       58       76       97
+  ----------------------------------------------------------------
+  A (liscia)           0.082    0.082    0.082    0.082    0.082
+  B                    0.082    0.082    0.082    0.082    0.082
+  C                    0.082    0.082    0.082    0.082    0.082
+  D                    0.082    0.082    0.082    0.082    0.082
+  E (sconnessa)        0.082    0.082    0.082    0.082    0.082
+  ----------------------------------------------------------------
+
+  TARGET xi* per classe (l'ottimo su QUELLA strada: cambia riga per riga):
+    A:    0.082   0.101   0.094   0.134   0.159
+    B:    0.083   0.123   0.247   0.195   0.255
+    C:    0.100   0.227   0.300   0.330   0.322
+    D:    0.212   0.325   0.339   0.333   0.348
+    E:    0.345   0.348   0.363   0.359   0.368
+  baseline √2 (solo v):    0.662   0.549   0.349   0.182   0.105
+
+  RMS a_z closed-loop [m/s^2] (per capire quanto e' fuori distribuzione):
+    A:     0.18    0.31    0.35    0.55    0.69
+    B:     0.24    0.50    0.85    0.84    1.25
+    C:     0.52    1.28    1.13    1.50    2.18
+    D:     1.36    1.96    2.34    2.93    3.32
+    E:     2.69    3.73    5.18    5.71    6.26
+
+  Errore medio  |xi_rete - xi*| = 0.162
+  Errore MASSIMO                = 0.286 (classe E, 97 km/h: xi=0.082 contro xi*=0.368)
+
+  RUMORE DEL TARGET (da 5 realizzazioni della stessa cella):
+    scarto tipo fra realizzazioni     : 0.035   (max 0.122)
+    incertezza sulla MEDIA riportata  : 0.016   <- barra d'errore delle celle qui sopra
+    celle con errore oltre 2 barre    : 20 su 25   (le altre sono compatibili col rumore)
+    bias medio con segno              : -0.162   (rete piu MORBIDA del target)
+
+  Escursione di xi* fra classe A ed E, a parita' di velocita' : 0.243
+  Escursione prodotta dalla RETE                              : 0.000
+  (se la prima e' grande e la seconda ~0, la rete sta ignorando la strada;
+   se la prima e' ~0, e' il TARGET a non dipendere dalla strada)
+
+================================================================================================
+ 3) DISTRIBUZIONE DATASET (TRAINING) — dove vivono i campioni nel piano (v, a_z)
+================================================================================================
+ DATI      : 50 tracce di TRAINING (2 reali registrate + 48 sintetiche ISO 8608), finestre da 2 s
+ xi        : ETICHETTA calcolata (target), non uscita della rete
+  campioni analizzati: 150000 (sottocampionati da 566864)
+  v     [km/h] : min    7.2  mediana   37.7  max  107.7
+  RMS a_z      : min  0.053  mediana  0.343  max 13.329
+  xi target    : min  0.082  mediana  0.082  max  0.716
+
+  corr(RMS a_z, xi)          = +0.630   <- il SEGNALE VERO (xi* dipende dalla rugosita')
+  Spearman(RMS a_z, xi)      = +0.741
+  corr(v, xi)                = +0.527   <- informazione COMPLEMENTARE: serve a convertire a_z in rugosita'
+  corr(RMS a_z, v)           = +0.413   <- quanto a_z e v sono confuse fra loro
+  corr parziale (a v fissa)  = +0.532   <- quanto conta a_z A PARITA' di velocita' (deve essere grande)
+  copertura griglia (v x a_z)= 94%      <- alta = disegno fattoriale, bassa = diagonale
+
+  Tabella incrociata: xi target medio per bin di velocita' e di RMS a_z
+  RMS \ v [km/h]         14       25       37       57       89
+  -------------------------------------------------------------
+            7.38      0.216    0.248    0.329    0.324    0.350
+            0.94      0.145    0.153    0.185    0.270    0.319
+            0.36      0.085    0.090    0.094    0.119    0.135
+            0.21      0.083    0.083    0.089    0.091    0.096
+            0.11      0.082    0.082    0.083    0.084    0.087
+  ('--' = cella VUOTA: combinazione mai vista in addestramento; se le celle piene
+   stanno su una diagonale, velocita' e accelerazione NON sono separabili)
+
+================================================================================================
+ 4) INDICI DI SANITA' FISICA   [target = xi* ottimo]
+================================================================================================
+  [    ] quota di xi spiegata da a_z  = 0.000   (ora NON deve essere 0: se lo e', la rete ignora la strada)
+          variazione di xi lungo a_z  = 0.0000
+          variazione di xi lungo v    = 0.0000
+  [NO  ] errore closed-loop |xi - xi*| = 0.1619   (e' l'indicatore che conta ora)
+  [NO  ] escursione con la strada: rete 0.000 contro target 0.243  (0% del necessario)
+  [    ] frazione monotona in v       = 0.0%  (non piu' un requisito: la tenuta puo' chiedere di irrigidire)
+  [    ] distanza dal baseline √2     = 0.2698   (se ~0 la correzione appresa non sta facendo nulla)
+
+  Sensibilita' d(xi)/d(log10 RMS a_z), crossover r=√2 a 53 km/h:
+        sotto il crossover : +0.0000
+        sopra il crossover : +0.0000
+        (sopra r=√2 una sensibilita' POSITIVA e' un anello di retroazione
+         positivo, ma ora puo' essere legittimo: se xi* stesso sale con la
+         rugosita', l'anello e' voluto. Va giudicato contro xi*, non da solo.)
+
+  Figura diagnostica salvata: diagnostica_xi.png
+  Report testuale salvato:    diagnostica_report.txt
+    [ok] Figura salvata: risultati_sospensione.png
+    [ok] Figura efficienza salvata: efficienza_sospensione.png
+
+[3] Animazione: tutti i controllori sulla stessa strada demo...
+    (la strada demo e' severa — equivale a una classe E ISO 8608 — quindi xi DEVE muoversi parecchio)
+    Controllori simulati sulla stessa strada demo (8 s):
+                          xi  comfort Wk  gomma[mm]  margine
+      ML       0.082-0.082        1.22       7.22     1.55
+      ottimo   0.082-0.426        1.81       4.61     0.99
+      sqrt2    0.120-0.606        1.98       5.87     1.26
+      passivo  0.307 (fisso)        1.98       4.50     0.96
+      (margine > 1 = il vincolo di distacco ruota e' violato)
+    scarto medio |xi_ML - xi*| sulla demo: 0.156
+    [i] MP4 non salvato: manca ffmpeg. Per installarlo: brew install ffmpeg
+        (l'animazione a schermo funziona comunque) FileNotFoundError
+==========================================================================================
+Completato in 8886.6 s
+andreaalessandri@MacMini2020 / % 
+
+
+
+
+
+
+last ottima3
+
+/usr/local/bin/python3 "/Users/andreaalessandri/Desktop/ML - Progetto/Codice/main.py"
+andreaalessandri@MacMini2020 / % /usr/local/bin/python3 "/Users/andreaalessandri/Desktop/ML - Progetto/Codice/main.py"
+==========================================================================================
+ SOSPENSIONE 2 GDL (PEUGEOT 207) — CONTROLLO APPRESO (ML)
+ Legge di riferimento (etichette): OTTIMO VINCOLATO (comfort ISO 2631 sotto i limiti hardware)
+ omega_n = 9.41 rad/s (1.50 Hz)   |   crossover a r = √2 ≈ 1.414
+ Sistema: Darwin 24.6.0 / arm64 / Python 3.14.3 / codifica stampe utf-8
+==========================================================================================
+    HW: Apple Silicon GPU (MPS)
+    Core: 8 totali -> uso 4 performance (salto 4 efficiency)
+    Operatori verificati su mps (conv dilatate, batchnorm, riduzione depthwise, forward+backward)
+
+[1] Caricamento tracce e generazione etichette (parallela sui core)...
+  [ok] 3 tracce reali -> 2 train / 1 validazione (thessaloniki_19_11_2023.pkl)
+    [!] larisa_07_10_2023.pkl: cadenza reale 100.1 Hz (jitter 15.3%) contro cfg.freq_campion = 100 Hz
+        ricampionata su griglia uniforme: 271177 -> 271314 campioni. Senza questo, filtri e integrazioni lavorerebbero alla frequenza sbagliata.
+    [!] thessaloniki_01_10_2023.pkl: cadenza reale 100.1 Hz (jitter 13.5%) contro cfg.freq_campion = 100 Hz
+        ricampionata su griglia uniforme: 229148 -> 229200 campioni. Senza questo, filtri e integrazioni lavorerebbero alla frequenza sbagliata.
+    [!] thessaloniki_19_11_2023.pkl: cadenza reale 100.1 Hz (jitter 14.7%) contro cfg.freq_campion = 100 Hz
+        ricampionata su griglia uniforme: 252392 -> 252468 campioni. Senza questo, filtri e integrazioni lavorerebbero alla frequenza sbagliata.
+    Filtro ISO 2631-1 Wk verificato sulla Tabella 3 della norma: errore massimo 0.44%
+    Etichette da OTTIMIZZAZIONE VINCOLATA: si cerca la coppia (xi, kp) che
+    minimizza il comfort ISO 2631 Wk restando entro i limiti hardware.
+    Limiti dei vincoli — ognuno = limite di PICCO / fattore di picco:
+      GOMMA  picco  15.38 mm = (m_cassa+m_ruota)*g/k_gomma = (260+38)*9.807/190000   [deflessione statica: oltre, la ruota stacca]
+             fattore 3.30 (ripiego cfg)  ->  RMS ammesso 4.66 mm
+      CORSA  picco  80 mm = cfg.corsa_disponibile   [rattle space — VALORE NON VERIFICATO sulla 207]
+             fattore 3.30 (ripiego cfg)  ->  RMS ammesso 24.24 mm
+      FORZA  picco   1500 N  = cfg.forza_max   [saturazione attuatore, spec hardware]
+             fattore 3.30 (ripiego cfg)  ->  RMS ammesso 455 N
+      COMFORT scala 0.315 m/s^2 = cfg.xi_ott_comfort_rif   [soglia ISO 2631-1, non un limite: e' la scala dell'obiettivo]
+    Griglia 21x15 = 315 candidati, finestra 2 s, penalita' 1000
+    Data augmentation: 48 strade sintetiche ISO 8608 (buche/dossi bruschi, gradini, salite/discese)
+    Griglia fattoriale: 5 classi x 5 velocita' = 25 celle | training 21 celle | validazione 4 celle (DISGIUNTE)
+    Crossover r=√2 a v ≈ 53 km/h: le tracce a velocita' variabile lo attraversano a rugosita' costante
+      train  1: classe E (x1.09)  v   36-  42 km/h [costante]  RMS a_z= 5.13 m/s^2  ostacoli= 5  n_max=2.83 c/m
+      train  2: classe B (x1.10)  v   20-  97 km/h [rampa   ]  RMS a_z= 1.17 m/s^2  ostacoli=15  n_max=1.48 c/m
+      train  3: classe C (x0.77)  v   42- 100 km/h [urbano  ]  RMS a_z= 1.99 m/s^2  ostacoli= 7  n_max=1.43 c/m
+      train  4: classe C (x1.71)  v   19-  24 km/h [costante]  RMS a_z= 1.59 m/s^2  ostacoli= 9  n_max=2.83 c/m
+      train  5: classe E (x1.86)  v   73-  79 km/h [costante]  RMS a_z= 9.20 m/s^2  ostacoli=21  n_max=1.83 c/m
+      train  6: classe B (x1.29)  v   19-  24 km/h [costante]  RMS a_z= 0.71 m/s^2  ostacoli= 3  n_max=2.83 c/m
+      train  7: classe A (x1.65)  v   19-  78 km/h [rampa   ]  RMS a_z= 0.82 m/s^2  ostacoli= 5  n_max=1.86 c/m
+      train  8: classe E (x1.08)  v   95- 100 km/h [costante]  RMS a_z= 8.23 m/s^2  ostacoli=20  n_max=1.44 c/m
+      train  9: classe B (x0.78)  v   42-  99 km/h [urbano  ]  RMS a_z= 1.56 m/s^2  ostacoli=15  n_max=1.45 c/m
+      train 10: classe A (x1.17)  v   30-  75 km/h [urbano  ]  RMS a_z= 0.72 m/s^2  ostacoli=10  n_max=1.91 c/m
+      train 11: classe D (x1.27)  v   24-  58 km/h [rampa   ]  RMS a_z= 3.53 m/s^2  ostacoli=14  n_max=2.47 c/m
+      train 12: classe A (x1.71)  v   11-  78 km/h [sweep   ]  RMS a_z= 0.54 m/s^2  ostacoli= 2  n_max=1.85 c/m
+      train 13: classe D (x1.35)  v   37-  89 km/h [rampa   ]  RMS a_z= 4.13 m/s^2  ostacoli=16  n_max=1.63 c/m
+      train 14: classe C (x0.99)  v   11-  87 km/h [sweep   ]  RMS a_z= 2.09 m/s^2  ostacoli=12  n_max=1.66 c/m
+      train 15: classe D (x1.77)  v   11-  75 km/h [sweep   ]  RMS a_z= 4.38 m/s^2  ostacoli=30  n_max=1.91 c/m
+      train 16: classe C (x1.91)  v   54-  60 km/h [costante]  RMS a_z= 2.60 m/s^2  ostacoli= 7  n_max=2.40 c/m
+      train 17: classe E (x0.68)  v   32-  75 km/h [urbano  ]  RMS a_z= 4.91 m/s^2  ostacoli= 9  n_max=1.91 c/m
+      train 18: classe B (x1.88)  v   30-  75 km/h [urbano  ]  RMS a_z= 1.65 m/s^2  ostacoli=12  n_max=1.92 c/m
+      train 19: classe B (x1.69)  v   21-  52 km/h [urbano  ]  RMS a_z= 1.09 m/s^2  ostacoli= 4  n_max=2.78 c/m
+      train 20: classe A (x0.97)  v   46- 108 km/h [sweep   ]  RMS a_z= 0.61 m/s^2  ostacoli= 5  n_max=1.34 c/m
+      train 21: classe D (x1.85)  v   73-  79 km/h [costante]  RMS a_z= 5.49 m/s^2  ostacoli=28  n_max=1.82 c/m
+      train 22: classe E (x1.25)  v   36-  42 km/h [costante]  RMS a_z= 5.49 m/s^2  ostacoli=10  n_max=2.83 c/m
+      train 23: classe B (x1.63)  v   95- 101 km/h [costante]  RMS a_z= 2.27 m/s^2  ostacoli=22  n_max=1.43 c/m
+      train 24: classe C (x1.32)  v   73-  79 km/h [costante]  RMS a_z= 2.57 m/s^2  ostacoli= 7  n_max=1.82 c/m
+      train 25: classe C (x1.33)  v   21-  93 km/h [rampa   ]  RMS a_z= 1.93 m/s^2  ostacoli=10  n_max=1.55 c/m
+      train 26: classe E (x1.01)  v   41-  92 km/h [sweep   ]  RMS a_z= 6.42 m/s^2  ostacoli=13  n_max=1.57 c/m
+      train 27: classe B (x1.78)  v   20-  25 km/h [costante]  RMS a_z= 1.22 m/s^2  ostacoli= 8  n_max=2.83 c/m
+      train 28: classe A (x1.37)  v   73-  79 km/h [costante]  RMS a_z= 1.24 m/s^2  ostacoli=11  n_max=1.82 c/m
+      train 29: classe E (x1.88)  v   94-  99 km/h [costante]  RMS a_z=10.82 m/s^2  ostacoli=30  n_max=1.45 c/m
+      train 30: classe B (x1.49)  v   30-  77 km/h [rampa   ]  RMS a_z= 1.69 m/s^2  ostacoli=14  n_max=1.88 c/m
+      train 31: classe A (x1.81)  v   55-  61 km/h [costante]  RMS a_z= 1.15 m/s^2  ostacoli=14  n_max=2.36 c/m
+      train 32: classe D (x1.41)  v   32-  74 km/h [urbano  ]  RMS a_z= 3.94 m/s^2  ostacoli=15  n_max=1.95 c/m
+      train 33: classe A (x0.87)  v   18-  25 km/h [costante]  RMS a_z= 0.33 m/s^2  ostacoli= 1  n_max=2.83 c/m
+      train 34: classe D (x0.98)  v   37-  42 km/h [costante]  RMS a_z= 2.71 m/s^2  ostacoli= 6  n_max=2.83 c/m
+      train 35: classe C (x1.67)  v   22-  53 km/h [urbano  ]  RMS a_z= 1.81 m/s^2  ostacoli= 3  n_max=2.70 c/m
+      train 36: classe D (x1.03)  v   19-  25 km/h [costante]  RMS a_z= 2.14 m/s^2  ostacoli= 4  n_max=2.83 c/m
+      train 37: classe C (x1.07)  v   55-  61 km/h [costante]  RMS a_z= 2.03 m/s^2  ostacoli=10  n_max=2.37 c/m
+      train 38: classe E (x1.49)  v   27-  84 km/h [sweep   ]  RMS a_z= 7.21 m/s^2  ostacoli=19  n_max=1.71 c/m
+      train 39: classe B (x0.81)  v   21-  91 km/h [sweep   ]  RMS a_z= 1.52 m/s^2  ostacoli=16  n_max=1.58 c/m
+      train 40: classe B (x0.63)  v   38-  85 km/h [rampa   ]  RMS a_z= 1.26 m/s^2  ostacoli=12  n_max=1.69 c/m
+      train 41: classe A (x1.73)  v   19-  99 km/h [rampa   ]  RMS a_z= 0.72 m/s^2  ostacoli=10  n_max=1.46 c/m
+      train 42: classe D (x0.63)  v   73-  78 km/h [costante]  RMS a_z= 3.15 m/s^2  ostacoli=10  n_max=1.84 c/m
+      train 43: classe E (x1.04)  v   11-  81 km/h [sweep   ]  RMS a_z= 5.65 m/s^2  ostacoli=16  n_max=1.77 c/m
+      train 44: classe B (x1.59)  v   95- 101 km/h [costante]  RMS a_z= 1.77 m/s^2  ostacoli=10  n_max=1.43 c/m
+      train 45: classe C (x1.08)  v   73-  79 km/h [costante]  RMS a_z= 2.88 m/s^2  ostacoli=22  n_max=1.82 c/m
+      train 46: classe C (x1.05)  v   18-  25 km/h [costante]  RMS a_z= 0.87 m/s^2  ostacoli= 0  n_max=2.83 c/m
+      train 47: classe E (x0.72)  v   73-  78 km/h [costante]  RMS a_z= 6.13 m/s^2  ostacoli=14  n_max=1.84 c/m
+      train 48: classe B (x1.34)  v   19-  24 km/h [costante]  RMS a_z= 1.07 m/s^2  ostacoli= 9  n_max=2.83 c/m
+      valid  1: classe C (x0.62)  v   20-  98 km/h [rampa   ]  RMS a_z= 1.81 m/s^2  ostacoli=18  n_max=1.48 c/m
+      valid  2: classe E (x0.62)  v   19-  24 km/h [costante]  RMS a_z= 2.92 m/s^2  ostacoli= 3  n_max=2.83 c/m
+      valid  3: classe A (x1.44)  v   11-  86 km/h [sweep   ]  RMS a_z= 0.46 m/s^2  ostacoli= 3  n_max=1.68 c/m
+      valid  4: classe D (x1.08)  v   53- 119 km/h [urbano  ]  RMS a_z= 4.59 m/s^2  ostacoli=21  n_max=1.21 c/m
+    Campioni TRAIN      : 566864  (50 tracce = reali + sintetiche)
+    Etichetta FORZA     : |F*| max 1500 N su un limite di 1500 N  |  satura nel 0.16% dei campioni
+    Campioni VALID reale: 157458  (3a traccia registrata, mai vista)
+    Campioni VALID sint.: 17200  (4 strade su celle classe x velocita' DISGIUNTE dal training)
+    Normalizzazione (dai dati di training): Normalizzatore(a_z: media=+0.0009 std=2.1060 | v: media=12.037 std=6.986)
+    Salvata in normalizzatore.json
+
+[2] Addestramento di DUE reti separate (Loss() e Optimizer indipendenti)...
+    Scarto etichette dal baseline 'comfort' [logit]: mediana 1.82 | p90 3.31 | p99 4.03 | max 8.77
+    -> alpha suggerito (max scarto +10%) = 9.65   |   alpha finale in config = 7.00
+    [!] alpha finale TROPPO PICCOLO: la correzione satura e la rete non puo' raggiungere xi*. Alzo a 9.65.
+    Rete xi = sigmoid(L(v) + alpha*Delta(a_z,v)) con alpha da 0.30 a 9.65 (curriculum)
+    Regolarizzazione: rete xi lr=1e-04 wd=3e-04  |  rete forza lr=1e-05 wd=1e-05
+    loss forza: Huber con delta = 0.1779 (= 2 x 1.4826 x MAD = 2 x 0.0890)  |  curtosi in eccesso del target 8.1  |  14.5% dei campioni nel ramo lineare
+    loss xi: MSE pesata per strato (target senza code, ma con una massa al minimo del damper: serve il peso, non la robustezza)
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 0.3000
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.422606 max=1.000000 mean=0.979384
+beta*Delta Intoccato      min=-0.126782 max=0.300000 mean=0.293815
+Delta Clampato [-1,1]     min=-0.422606 max=1.000000 mean=0.979384
+beta*Delta Clampato       min=-0.126782 max=0.300000 mean=0.293815
+L(v) + beta*Delta         min=-3.602880 max=-3.176099 mean=-3.182283
+L(v) + beta*Delta Clampato min=-3.602880 max=-3.176099 mean=-3.182283
+    Epoca 01/12  (alpha=0.30)  |  RETE xi: Loss(Train)=0.10505  Loss(Valid)=0.02835  |  RETE F: Loss(Train)=0.01082  Loss(Valid)=0.00241
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 1.6352
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.951502 max=1.000000 mean=0.427364
+beta*Delta Intoccato      min=-1.555889 max=1.635191 mean=0.698822
+Delta Clampato [-1,1]     min=-0.951502 max=1.000000 mean=0.427364
+beta*Delta Clampato       min=-1.555889 max=1.635191 mean=0.698822
+L(v) + beta*Delta         min=-5.031987 max=-1.840908 mean=-2.777277
+L(v) + beta*Delta Clampato min=-5.031987 max=-1.840908 mean=-2.777277
+
+DEBUG EPOCA 3
+Coefficiente Alpha (beta buffer) = 2.9704
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.817071 max=0.826606 mean=0.296728
+beta*Delta Intoccato      min=-2.427015 max=2.455338 mean=0.881396
+Delta Clampato [-1,1]     min=-0.817071 max=0.826606 mean=0.296728
+beta*Delta Clampato       min=-2.427015 max=2.455338 mean=0.881396
+L(v) + beta*Delta         min=-5.903113 max=-1.020761 mean=-2.594703
+L(v) + beta*Delta Clampato min=-5.903113 max=-1.020761 mean=-2.594703
+    Epoca 03/12  (alpha=2.97)  |  RETE xi: Loss(Train)=0.01946  Loss(Valid)=0.01404  |  RETE F: Loss(Train)=0.00245  Loss(Valid)=0.00187
+
+DEBUG EPOCA 4
+Coefficiente Alpha (beta buffer) = 4.3056
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.562010 max=0.599580 mean=0.338367
+beta*Delta Intoccato      min=-2.419777 max=2.581537 mean=1.456867
+Delta Clampato [-1,1]     min=-0.562010 max=0.599580 mean=0.338367
+beta*Delta Clampato       min=-2.419777 max=2.581537 mean=1.456867
+L(v) + beta*Delta         min=-5.895876 max=-0.894562 mean=-2.019232
+L(v) + beta*Delta Clampato min=-5.895876 max=-0.894562 mean=-2.019232
+
+DEBUG EPOCA 5
+Coefficiente Alpha (beta buffer) = 5.6408
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.363848 max=0.507912 mean=0.301181
+beta*Delta Intoccato      min=-2.052384 max=2.865016 mean=1.698895
+Delta Clampato [-1,1]     min=-0.363848 max=0.507912 mean=0.301181
+beta*Delta Clampato       min=-2.052384 max=2.865016 mean=1.698895
+L(v) + beta*Delta         min=-5.528483 max=-0.611083 mean=-1.777204
+L(v) + beta*Delta Clampato min=-5.528483 max=-0.611083 mean=-1.777204
+
+DEBUG EPOCA 6
+Coefficiente Alpha (beta buffer) = 6.9760
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.631920 max=0.417333 mean=0.192387
+beta*Delta Intoccato      min=-4.408252 max=2.911301 mean=1.342081
+Delta Clampato [-1,1]     min=-0.631920 max=0.417333 mean=0.192387
+beta*Delta Clampato       min=-4.408252 max=2.911301 mean=1.342081
+L(v) + beta*Delta         min=-7.884351 max=-0.564798 mean=-2.134018
+L(v) + beta*Delta Clampato min=-7.884351 max=-0.564798 mean=-2.134018
+    Epoca 06/12  (alpha=6.98)  |  RETE xi: Loss(Train)=0.00279  Loss(Valid)=0.01584  |  RETE F: Loss(Train)=0.00195  Loss(Valid)=0.00185
+
+DEBUG EPOCA 7
+Coefficiente Alpha (beta buffer) = 8.3112
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.759355 max=0.342944 mean=0.151226
+beta*Delta Intoccato      min=-6.311113 max=2.850259 mean=1.256863
+Delta Clampato [-1,1]     min=-0.759355 max=0.342944 mean=0.151226
+beta*Delta Clampato       min=-6.311113 max=2.850259 mean=1.256863
+L(v) + beta*Delta         min=-9.787212 max=-0.625840 mean=-2.219235
+L(v) + beta*Delta Clampato min=-9.787212 max=-0.625840 mean=-2.219235
+
+DEBUG EPOCA 8
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.631655 max=0.295389 mean=0.082978
+beta*Delta Intoccato      min=-6.093166 max=2.849425 mean=0.800432
+Delta Clampato [-1,1]     min=-0.631655 max=0.295389 mean=0.082978
+beta*Delta Clampato       min=-6.093166 max=2.849425 mean=0.800432
+L(v) + beta*Delta         min=-9.569264 max=-0.626674 mean=-2.675667
+L(v) + beta*Delta Clampato min=-9.569264 max=-0.626674 mean=-2.675667
+
+DEBUG EPOCA 9
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.735953 max=0.300016 mean=0.047425
+beta*Delta Intoccato      min=-7.099256 max=2.894055 mean=0.457479
+Delta Clampato [-1,1]     min=-0.735953 max=0.300016 mean=0.047425
+beta*Delta Clampato       min=-7.099256 max=2.894055 mean=0.457479
+L(v) + beta*Delta         min=-10.575355 max=-0.582044 mean=-3.018620
+L(v) + beta*Delta Clampato min=-10.575355 max=-0.582044 mean=-3.018620
+    Epoca 09/12  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00167  Loss(Valid)=0.01633  |  RETE F: Loss(Train)=0.00172  Loss(Valid)=0.00181
+
+DEBUG EPOCA 10
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.671101 max=0.284201 mean=0.050103
+beta*Delta Intoccato      min=-6.473674 max=2.741501 mean=0.483310
+Delta Clampato [-1,1]     min=-0.671101 max=0.284201 mean=0.050103
+beta*Delta Clampato       min=-6.473674 max=2.741501 mean=0.483310
+L(v) + beta*Delta         min=-9.949773 max=-0.734598 mean=-2.992789
+L(v) + beta*Delta Clampato min=-9.949773 max=-0.734598 mean=-2.992789
+
+DEBUG EPOCA 11
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.670723 max=0.307083 mean=0.041527
+beta*Delta Intoccato      min=-6.470020 max=2.962224 mean=0.400588
+Delta Clampato [-1,1]     min=-0.670723 max=0.307083 mean=0.041527
+beta*Delta Clampato       min=-6.470020 max=2.962224 mean=0.400588
+L(v) + beta*Delta         min=-9.946119 max=-0.513875 mean=-3.075511
+L(v) + beta*Delta Clampato min=-9.946119 max=-0.513875 mean=-3.075511
+
+DEBUG EPOCA 12
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.708246 max=0.318659 mean=0.012818
+beta*Delta Intoccato      min=-6.831982 max=3.073890 mean=0.123642
+Delta Clampato [-1,1]     min=-0.708246 max=0.318659 mean=0.012818
+beta*Delta Clampato       min=-6.831982 max=3.073890 mean=0.123642
+L(v) + beta*Delta         min=-10.308081 max=-0.402208 mean=-3.352457
+L(v) + beta*Delta Clampato min=-10.308081 max=-0.402208 mean=-3.352457
+    Epoca 12/12  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00120  Loss(Valid)=0.01630  |  RETE F: Loss(Train)=0.00156  Loss(Valid)=0.00188
+    Rollout su 48 strade sintetiche NUOVE (seme 1234+4441, celle identiche al training) + 2 registrate
+
+[2b] DAgger: allineamento fra dati di addestramento e stati visitati
+    Preparate 50 strade per l'aggregazione (20 s ciascuna), di cui 48 con strada VERA nota; etichette dell'esperto calcolate una volta
+    Validazione ricalibrata su rollout closed-loop di 4 strade di validazione (la vecchia era sulla distribuzione passiva)
+    giro 1/5  beta=1.00  |  RMS a_z visitata 3.600 contro 2.106 nel dataset  |  |xi_applicato - xi*| = 0.0000  |  campioni 566864 -> 653945
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.100164 max=0.341997 mean=0.244501
+beta*Delta Intoccato      min=0.966215 max=3.299022 mean=2.358538
+Delta Clampato [-1,1]     min=0.100164 max=0.341997 mean=0.244501
+beta*Delta Clampato       min=0.966215 max=3.299022 mean=2.358538
+L(v) + beta*Delta         min=-2.509884 max=-0.177077 mean=-1.117560
+L(v) + beta*Delta Clampato min=-2.509884 max=-0.177077 mean=-1.117560
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00496  Loss(Valid)=0.00636  |  RETE F: Loss(Train)=0.00180  Loss(Valid)=0.00193
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.081985 max=0.346671 mean=0.243741
+beta*Delta Intoccato      min=0.790855 max=3.344104 mean=2.351206
+Delta Clampato [-1,1]     min=0.081985 max=0.346671 mean=0.243741
+beta*Delta Clampato       min=0.790855 max=3.344104 mean=2.351206
+L(v) + beta*Delta         min=-2.685244 max=-0.131995 mean=-1.124893
+L(v) + beta*Delta Clampato min=-2.685244 max=-0.131995 mean=-1.124893
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00329  Loss(Valid)=0.00604  |  RETE F: Loss(Train)=0.00172  Loss(Valid)=0.00189
+    giro 2/5  beta=0.40  |  RMS a_z visitata 3.571 contro 2.375 nel dataset  |  |xi_applicato - xi*| = 0.0170  |  campioni 566864 -> 741026
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.014957 max=0.358902 mean=0.248533
+beta*Delta Intoccato      min=0.144281 max=3.462093 mean=2.397439
+Delta Clampato [-1,1]     min=0.014957 max=0.358902 mean=0.248533
+beta*Delta Clampato       min=0.144281 max=3.462093 mean=2.397439
+L(v) + beta*Delta         min=-3.331818 max=-0.014006 mean=-1.078659
+L(v) + beta*Delta Clampato min=-3.331818 max=-0.014006 mean=-1.078659
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00272  Loss(Valid)=0.00672  |  RETE F: Loss(Train)=0.00179  Loss(Valid)=0.00183
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.008079 max=0.365024 mean=0.229895
+beta*Delta Intoccato      min=-0.077938 max=3.521143 mean=2.217645
+Delta Clampato [-1,1]     min=-0.008079 max=0.365024 mean=0.229895
+beta*Delta Clampato       min=-0.077938 max=3.521143 mean=2.217645
+L(v) + beta*Delta         min=-3.554036 max=0.045044 mean=-1.258453
+L(v) + beta*Delta Clampato min=-3.554036 max=0.045044 mean=-1.258453
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00219  Loss(Valid)=0.00658  |  RETE F: Loss(Train)=0.00173  Loss(Valid)=0.00187
+    giro 3/5  beta=0.16  |  RMS a_z visitata 3.547 contro 2.557 nel dataset  |  |xi_applicato - xi*| = 0.0217  |  campioni 566864 -> 828107
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.062804 max=0.372412 mean=0.234732
+beta*Delta Intoccato      min=-0.605827 max=3.592411 mean=2.264305
+Delta Clampato [-1,1]     min=-0.062804 max=0.372412 mean=0.234732
+beta*Delta Clampato       min=-0.605827 max=3.592411 mean=2.264305
+L(v) + beta*Delta         min=-4.081925 max=0.116312 mean=-1.211794
+L(v) + beta*Delta Clampato min=-4.081925 max=0.116312 mean=-1.211794
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00177  Loss(Valid)=0.00762  |  RETE F: Loss(Train)=0.00177  Loss(Valid)=0.00181
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.033335 max=0.375592 mean=0.227626
+beta*Delta Intoccato      min=-0.321556 max=3.623095 mean=2.195763
+Delta Clampato [-1,1]     min=-0.033335 max=0.375592 mean=0.227626
+beta*Delta Clampato       min=-0.321556 max=3.623095 mean=2.195763
+L(v) + beta*Delta         min=-3.797655 max=0.146996 mean=-1.280336
+L(v) + beta*Delta Clampato min=-3.797655 max=0.146996 mean=-1.280336
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00151  Loss(Valid)=0.00683  |  RETE F: Loss(Train)=0.00171  Loss(Valid)=0.00178
+    giro 4/5  beta=0.06  |  RMS a_z visitata 3.534 contro 2.689 nel dataset  |  |xi_applicato - xi*| = 0.0216  |  campioni 566864 -> 915188
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.004087 max=0.372282 mean=0.247131
+beta*Delta Intoccato      min=0.039423 max=3.591165 mean=2.383912
+Delta Clampato [-1,1]     min=0.004087 max=0.372282 mean=0.247131
+beta*Delta Clampato       min=0.039423 max=3.591165 mean=2.383912
+L(v) + beta*Delta         min=-3.436675 max=0.115066 mean=-1.092187
+L(v) + beta*Delta Clampato min=-3.436675 max=0.115066 mean=-1.092187
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00127  Loss(Valid)=0.00698  |  RETE F: Loss(Train)=0.00172  Loss(Valid)=0.00188
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.049937 max=0.377436 mean=0.258589
+beta*Delta Intoccato      min=0.481713 max=3.640874 mean=2.494442
+Delta Clampato [-1,1]     min=0.049937 max=0.377436 mean=0.258589
+beta*Delta Clampato       min=0.481713 max=3.640874 mean=2.494442
+L(v) + beta*Delta         min=-2.994385 max=0.164775 mean=-0.981657
+L(v) + beta*Delta Clampato min=-2.994385 max=0.164775 mean=-0.981657
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00111  Loss(Valid)=0.00667  |  RETE F: Loss(Train)=0.00167  Loss(Valid)=0.00180
+    giro 5/5  beta=0.03  |  RMS a_z visitata 3.527 contro 2.790 nel dataset  |  |xi_applicato - xi*| = 0.0203  |  campioni 566864 -> 1002269
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.029630 max=0.371484 mean=0.262729
+beta*Delta Intoccato      min=0.285817 max=3.583461 mean=2.534374
+Delta Clampato [-1,1]     min=0.029630 max=0.371484 mean=0.262729
+beta*Delta Clampato       min=0.285817 max=3.583461 mean=2.534374
+L(v) + beta*Delta         min=-3.190282 max=0.107363 mean=-0.941724
+L(v) + beta*Delta Clampato min=-3.190282 max=0.107363 mean=-0.941724
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00097  Loss(Valid)=0.00733  |  RETE F: Loss(Train)=0.00166  Loss(Valid)=0.00190
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.028206 max=0.366044 mean=0.256250
+beta*Delta Intoccato      min=0.272087 max=3.530990 mean=2.471874
+Delta Clampato [-1,1]     min=0.028206 max=0.366044 mean=0.256250
+beta*Delta Clampato       min=0.272087 max=3.530990 mean=2.471874
+L(v) + beta*Delta         min=-3.204012 max=0.054892 mean=-1.004225
+L(v) + beta*Delta Clampato min=-3.204012 max=0.054892 mean=-1.004225
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00086  Loss(Valid)=0.00774  |  RETE F: Loss(Train)=0.00160  Loss(Valid)=0.00188
+
+==========================================================================================
+ VALIDAZIONE — confronto fra valori APPRESI e valori CALCOLATI, su dati mai visti
+==========================================================================================
+ xi predetto / F predetta : APPRESO dalle reti (solo a_z passata + v)
+ xi* / F* di riferimento  : CALCOLATO per ottimizzazione (conosce la strada e lo stato vero)
+
+ [A] REGISTRATA: thessaloniki_19_11_2023.pkl  |  2525 s  |  v 0-55 km/h  |  RMS a_z 0.32 m/s^2  |  rugosita' equivalente classe ISO B
+   xi(t)    -> R^2: +0.2035 | RMSE: 0.0809 | MAE: 0.0311 | dev.std target: 0.0906
+   forza(t) -> R^2: +0.7504 | RMSE: 93.6 N | MAE: 61.6 N
+   picchi   -> |F| max: target 1421 N, ML 919 N (-35%) | margine ML sul limite 39%
+                saturazione a ±1500 N: target 0.00%, ML 0.00% | sui picchi (|F*|>50% del max) il ML sta -401 N
+
+ [B] SINTETICHE, celle classe x velocita' DISGIUNTE dal training
+     valid  1 ISO C(x0.62) 20-98 km/h [rampa]; valid  2 ISO E(x0.62) 19-24 km/h [costante]; valid  3 ISO A(x1.44) 11-86 km/h [sweep]; valid  4 ISO D(x1.08) 53-119 km/h [urbano]
+   xi(t)    -> R^2: +0.9227 | RMSE: 0.0342 | MAE: 0.0223 | dev.std target: 0.1228
+   forza(t) -> R^2: +0.8174 | RMSE: 105.9 N | MAE: 60.1 N
+   picchi   -> |F| max: target 1500 N, ML 1500 N (+0%) | margine ML sul limite 0%
+                saturazione a ±1500 N: target 0.49%, ML 0.17% | sui picchi (|F*|>50% del max) il ML sta -374 N
+     ^ [B] e' il test severo: rugosita' x velocita' mai viste insieme.
+
+ |forza| max prevista dal ML: 919.1 N  (limite 1500 N, margine 39%)
+
+ COMFORT in CLOSED-LOOP — RMS accelerazione cassa
+   dati: thessaloniki_19_11_2023.pkl, primi 60 s  (v 0-15 km/h, rugosita' equivalente classe ISO B)
+   passiva  0.166 m/s^2
+   ML       0.042 m/s^2   (+74.7% vs passiva)
+   ottimo   0.038 m/s^2   (+76.9% vs passiva)  <- il tetto raggiungibile con le etichette
+
+--------------------------------------------------------------------------
+ ETICHETTE OTTIME: xi* in funzione della RUGOSITA' (RMS a_z) e della velocita'   [strade sintetiche]
+--------------------------------------------------------------------------
+RMS a_z        | v [km/h]  | xi* medio  | |forza| [N]
+0.12-0.67      | 41.4      | 0.114      | 134
+0.67-2.15      | 51.2      | 0.325      | 100
+2.15-3.11      | 38.7      | 0.336      | 181
+3.11-7.95      | 80.3      | 0.321      | 178
+ TENUTA DI STRADA su thessaloniki_19_11_2023.pkl (60 s) — RMS deflessione pneumatico: passiva 0.24 mm -> ML 0.08 mm   (limite ammesso 4.66 mm)
+
+ BILANCIO ENERGETICO — integrali su 60 s di thessaloniki_19_11_2023.pkl
+   IPOTESI  damper    : damper IDRAULICO: il suo calore NON e' recuperabile ed e' escluso dal recupero
+   IPOTESI  attuatore : attuatore ideale in trazione (eta_attuatore = 100%): il costo e' un LIMITE INFERIORE
+   CONVENZIONE: le voci misurate sono MODULI (>=0), il verso e' nel nome. Il bilancio ha segno
+   dal punto di vista della BATTERIA: <0 esce, >0 rientra. I joule scalano con la durata: non sono una potenza.
+   MECCANICA  damper dissipato in calore nell'olio — PERSO, fuori bilancio :     3.9 J
+   MECCANICA  attuatore, lavoro fatto sul veicolo (spinge)                :     7.7 J
+   MECCANICA  attuatore, lavoro ricevuto dal veicolo (frena)              :    12.5 J
+   ELETTRICO  ADDEBITO  = lavoro in spinta / eta_attuatore                :    -7.7 J   (esce dalla batteria)
+   ELETTRICO  ACCREDITO = eta*(ATTUATORE assorbita)                      :    +7.5 J   (rientra in batteria)
+   ELETTRICO  NETTO     = accredito - addebito                            :    -0.2 J  -> COSTO NETTO (esce dalla batteria piu' di quanto rientra)
+   [sensibilita'] con le perdite di trazione al 60% come il generatore, il netto sarebbe -5.3 J
+   [sensibilita'] con un damper ELETTROMAGNETICO al posto dell'idraulico il netto sarebbe +2.2 J
+################################################################################################
+#  DIAGNOSTICA FISICA — xi deve seguire xi* ottimo: dipende dalla RUGOSITA' (da a_z) e dalla velocita'
+#  2026-08-01 00:12   |   vincolo strutturale: ATTIVO alpha=9.65   |   metodo_freq: velocita
+################################################################################################
+
+================================================================================================
+ 1) MAPPA xi(v, RMS a_z) — OPEN LOOP
+================================================================================================
+ DATI      : banca di finestre di a_z generate col modello PASSIVO su profili ISO
+             8608 classi B,C,D,E a 29/58/86 km/h, poi RISCALATE al livello di RMS
+             indicato in riga. La FORMA spettrale resta realistica, cambia solo
+             l'ampiezza: e' un esperimento controllato, una variabile per volta.
+ xi        : APPRESO dalla rete (uscita, non etichetta). Media su tutte le finestre.
+ NB        : e' OPEN LOOP — a_z e' imposta dall'esterno, non prodotta dal controllo.
+             Per il comportamento reale vedi la mappa closed-loop al punto 2.
+    Righe = livello di a_z, colonne = velocita'. Quindi:
+      lungo una RIGA (a_z fissa, v che cresce) xi deve SCENDERE da xi_max a xi_min;
+      lungo una COLONNA (v fissa, a_z che cresce) xi deve restare QUASI COSTANTE.
+
+  RMS a_z \ v [km/h]      14     22     29     36     43     50     58     65     72     79     86     94    101    108
+  ---------------------------------------------------------------------------------------------------------------------
+     6.00 m/s^2        0.374  0.365  0.360  0.357  0.356  0.356  0.357  0.357  0.357  0.357  0.356  0.354  0.353  0.351
+     3.88 m/s^2        0.355  0.348  0.344  0.343  0.344  0.346  0.348  0.350  0.351  0.351  0.350  0.349  0.347  0.346
+     2.51 m/s^2        0.330  0.326  0.324  0.326  0.329  0.333  0.338  0.341  0.343  0.344  0.344  0.343  0.342  0.340
+     1.63 m/s^2        0.293  0.292  0.295  0.300  0.306  0.314  0.320  0.326  0.329  0.331  0.331  0.331  0.329  0.327
+     1.05 m/s^2        0.235  0.242  0.250  0.261  0.272  0.284  0.294  0.301  0.306  0.308  0.308  0.306  0.304  0.301
+     0.68 m/s^2        0.135  0.145  0.155  0.166  0.178  0.189  0.199  0.206  0.210  0.212  0.212  0.210  0.207  0.204
+     0.44 m/s^2        0.085  0.086  0.087  0.089  0.091  0.093  0.095  0.097  0.098  0.098  0.099  0.099  0.099  0.099
+     0.29 m/s^2        0.082  0.082  0.082  0.083  0.083  0.083  0.083  0.084  0.084  0.084  0.084  0.084  0.084  0.084
+     0.18 m/s^2        0.082  0.082  0.082  0.082  0.082  0.083  0.083  0.083  0.083  0.083  0.083  0.083  0.083  0.083
+     0.12 m/s^2        0.082  0.082  0.082  0.082  0.083  0.083  0.083  0.083  0.083  0.083  0.083  0.083  0.083  0.083
+     0.08 m/s^2        0.082  0.082  0.082  0.083  0.083  0.083  0.084  0.084  0.084  0.084  0.084  0.084  0.084  0.084
+     0.05 m/s^2        0.082  0.082  0.083  0.083  0.083  0.084  0.084  0.084  0.084  0.084  0.084  0.084  0.084  0.084
+  ---------------------------------------------------------------------------------------------------------------------
+  BASELINE √2 (solo v)   0.683  0.662  0.629  0.580  0.514  0.434  0.349  0.270  0.207  0.162  0.131  0.111  0.099  0.092
+  [range damper: xi_min=0.082  xi_max=0.716]
+
+================================================================================================
+ 2) xi MEDIO IN CLOSED-LOOP su strade ISO 8608 (anello di retroazione CHIUSO)
+================================================================================================
+ DATI      : 5 profili ISO 8608 (classi A, B, C, D, E) x 5 velocita' costanti, 12 s ciascuno,
+             generati come le strade di TRAINING (ostacoli, pendenze, spettro ISO).
+             Ogni cella e' la MEDIA di 5 realizzazioni con semi diversi:
+             con una sola strada per cella si legge il sorteggio degli ostacoli.
+             Scartato il 20% iniziale (warm-up: la finestra parte piena di zeri).
+ xi rete   : APPRESO — la rete legge la propria a_z controllata e comanda.
+ xi* target: CALCOLATO su QUELLA strada per ottimizzazione vincolata (conosce z_r).
+  classe \ v [km/h]         22       40       58       76       97
+  ----------------------------------------------------------------
+  A (liscia)           0.083    0.098    0.089    0.124    0.125
+  B                    0.083    0.095    0.183    0.281    0.283
+  C                    0.108    0.257    0.327    0.329    0.309
+  D                    0.294    0.325    0.338    0.331    0.335
+  E (sconnessa)        0.340    0.348    0.353    0.351    0.358
+  ----------------------------------------------------------------
+
+  TARGET xi* per classe (l'ottimo su QUELLA strada: cambia riga per riga):
+    A:    0.082   0.101   0.094   0.134   0.159
+    B:    0.083   0.123   0.247   0.195   0.255
+    C:    0.100   0.227   0.300   0.330   0.322
+    D:    0.212   0.325   0.339   0.333   0.348
+    E:    0.345   0.348   0.363   0.359   0.368
+  baseline √2 (solo v):    0.662   0.549   0.349   0.182   0.105
+
+  RMS a_z closed-loop [m/s^2] (per capire quanto e' fuori distribuzione):
+    A:     0.19    0.31    0.34    0.54    0.75
+    B:     0.24    0.51    1.07    1.04    1.69
+    C:     0.52    1.72    1.54    2.05    3.07
+    D:     1.79    2.61    3.12    3.97    4.42
+    E:     3.49    4.85    6.13    7.01    8.00
+
+  Errore medio  |xi_rete - xi*| = 0.019
+  Errore MASSIMO                = 0.086 (classe B, 76 km/h: xi=0.281 contro xi*=0.195)
+
+  RUMORE DEL TARGET (da 5 realizzazioni della stessa cella):
+    scarto tipo fra realizzazioni     : 0.035   (max 0.122)
+    incertezza sulla MEDIA riportata  : 0.016   <- barra d'errore delle celle qui sopra
+    celle con errore oltre 2 barre    : 5 su 25   (le altre sono compatibili col rumore)
+    bias medio con segno              : +0.002   (rete piu RIGIDA del target)
+
+  Escursione di xi* fra classe A ed E, a parita' di velocita' : 0.243
+  Escursione prodotta dalla RETE                              : 0.247
+  (se la prima e' grande e la seconda ~0, la rete sta ignorando la strada;
+   se la prima e' ~0, e' il TARGET a non dipendere dalla strada)
+
+================================================================================================
+ 3) DISTRIBUZIONE DATASET (TRAINING) — dove vivono i campioni nel piano (v, a_z)
+================================================================================================
+ DATI      : 50 tracce di TRAINING (2 reali registrate + 48 sintetiche ISO 8608), finestre da 2 s
+ xi        : ETICHETTA calcolata (target), non uscita della rete
+  campioni analizzati: 150000 (sottocampionati da 566864)
+  v     [km/h] : min    7.2  mediana   37.7  max  107.7
+  RMS a_z      : min  0.053  mediana  0.343  max 13.329
+  xi target    : min  0.082  mediana  0.082  max  0.716
+
+  corr(RMS a_z, xi)          = +0.630   <- il SEGNALE VERO (xi* dipende dalla rugosita')
+  Spearman(RMS a_z, xi)      = +0.741
+  corr(v, xi)                = +0.527   <- informazione COMPLEMENTARE: serve a convertire a_z in rugosita'
+  corr(RMS a_z, v)           = +0.413   <- quanto a_z e v sono confuse fra loro
+  corr parziale (a v fissa)  = +0.532   <- quanto conta a_z A PARITA' di velocita' (deve essere grande)
+  copertura griglia (v x a_z)= 94%      <- alta = disegno fattoriale, bassa = diagonale
+
+  Tabella incrociata: xi target medio per bin di velocita' e di RMS a_z
+  RMS \ v [km/h]         14       25       37       57       89
+  -------------------------------------------------------------
+            7.38      0.216    0.248    0.329    0.324    0.350
+            0.94      0.145    0.153    0.185    0.270    0.319
+            0.36      0.085    0.090    0.094    0.119    0.135
+            0.21      0.083    0.083    0.089    0.091    0.096
+            0.11      0.082    0.082    0.083    0.084    0.087
+  ('--' = cella VUOTA: combinazione mai vista in addestramento; se le celle piene
+   stanno su una diagonale, velocita' e accelerazione NON sono separabili)
+
+================================================================================================
+ 4) INDICI DI SANITA' FISICA   [target = xi* ottimo]
+================================================================================================
+  [    ] quota di xi spiegata da a_z  = 0.939   (ora NON deve essere 0: se lo e', la rete ignora la strada)
+          variazione di xi lungo a_z  = 0.1177
+          variazione di xi lungo v    = 0.0076
+  [OK  ] errore closed-loop |xi - xi*| = 0.0188   (e' l'indicatore che conta ora)
+  [OK  ] escursione con la strada: rete 0.247 contro target 0.243  (102% del necessario)
+  [    ] frazione monotona in v       = 26.3%  (non piu' un requisito: la tenuta puo' chiedere di irrigidire)
+  [    ] distanza dal baseline √2     = 0.2150   (se ~0 la correzione appresa non sta facendo nulla)
+
+  Sensibilita' d(xi)/d(log10 RMS a_z), crossover r=√2 a 53 km/h:
+        sotto il crossover : +0.1260
+        sopra il crossover : +0.1209
+        (sopra r=√2 una sensibilita' POSITIVA e' un anello di retroazione
+         positivo, ma ora puo' essere legittimo: se xi* stesso sale con la
+         rugosita', l'anello e' voluto. Va giudicato contro xi*, non da solo.)
+
+  Figura diagnostica salvata: diagnostica_xi.png
+  Report testuale salvato:    diagnostica_report.txt
+    [ok] Figura salvata: risultati_sospensione.png
+    [ok] Figura efficienza salvata: efficienza_sospensione.png
+
+[3] Animazione: tutti i controllori sulla stessa strada demo...
+    (la strada demo e' severa — equivale a una classe E ISO 8608 — quindi xi DEVE muoversi parecchio)
+    Controllori simulati sulla stessa strada demo (8 s):
+                          xi  comfort Wk  gomma[mm]  margine
+      ML       0.097-0.390        1.86       4.56     0.98
+      ottimo   0.082-0.426        1.81       4.61     0.99
+      sqrt2    0.120-0.606        1.98       5.87     1.26
+      passivo  0.307 (fisso)        1.98       4.50     0.96
+      (margine > 1 = il vincolo di distacco ruota e' violato)
+    scarto medio |xi_ML - xi*| sulla demo: 0.029
+    [i] MP4 non salvato: manca ffmpeg. Per installarlo: brew install ffmpeg
+        (l'animazione a schermo funziona comunque) FileNotFoundError
+==========================================================================================
+Completato in 2768.7 s
+andreaalessandri@MacMini2020 / % 
+
+
+
+LAST OTTIMA4
+
+
+
+andreaalessandri@MacMini2020 / % clear
+andreaalessandri@MacMini2020 / % /usr/local/bin/python3 "/Users/andreaalessandri/Desktop/ML - Progetto/Codice/main.py"
+==========================================================================================
+ SOSPENSIONE 2 GDL (PEUGEOT 207) — CONTROLLO APPRESO (ML)
+ Legge di riferimento (etichette): OTTIMO VINCOLATO (comfort ISO 2631 sotto i limiti hardware)
+ omega_n = 9.41 rad/s (1.50 Hz)   |   crossover a r = √2 ≈ 1.414
+ Sistema: Darwin 24.6.0 / arm64 / Python 3.14.3 / codifica stampe utf-8
+==========================================================================================
+    HW: Apple Silicon GPU (MPS)
+    Core: 8 totali -> uso 4 performance (salto 4 efficiency)
+    Operatori verificati su mps (conv dilatate, batchnorm, riduzione depthwise, forward+backward)
+
+[1] Caricamento tracce e generazione etichette (parallela sui core)...
+  [ok] 3 tracce reali -> 2 train / 1 validazione (thessaloniki_19_11_2023.pkl)
+    [!] larisa_07_10_2023.pkl: cadenza reale 100.1 Hz (jitter 15.3%) contro cfg.freq_campion = 100 Hz
+        ricampionata su griglia uniforme: 271177 -> 271314 campioni. Senza questo, filtri e integrazioni lavorerebbero alla frequenza sbagliata.
+    [!] thessaloniki_01_10_2023.pkl: cadenza reale 100.1 Hz (jitter 13.5%) contro cfg.freq_campion = 100 Hz
+        ricampionata su griglia uniforme: 229148 -> 229200 campioni. Senza questo, filtri e integrazioni lavorerebbero alla frequenza sbagliata.
+    [!] thessaloniki_19_11_2023.pkl: cadenza reale 100.1 Hz (jitter 14.7%) contro cfg.freq_campion = 100 Hz
+        ricampionata su griglia uniforme: 252392 -> 252468 campioni. Senza questo, filtri e integrazioni lavorerebbero alla frequenza sbagliata.
+    Filtro ISO 2631-1 Wk verificato sulla Tabella 3 della norma: errore massimo 0.44%
+    Etichette da OTTIMIZZAZIONE VINCOLATA: si cerca la coppia (xi, kp) che
+    minimizza il comfort ISO 2631 Wk restando entro i limiti hardware.
+    Limiti dei vincoli — ognuno = limite di PICCO / fattore di picco:
+      GOMMA  picco  15.38 mm = (m_cassa+m_ruota)*g/k_gomma = (260+38)*9.807/190000   [deflessione statica: oltre, la ruota stacca]
+             fattore 3.30 (ripiego cfg)  ->  RMS ammesso 4.66 mm
+      CORSA  picco  80 mm = cfg.corsa_disponibile   [rattle space — VALORE NON VERIFICATO sulla 207]
+             fattore 3.30 (ripiego cfg)  ->  RMS ammesso 24.24 mm
+      FORZA  picco   1500 N  = cfg.forza_max   [saturazione attuatore, spec hardware]
+             fattore 3.30 (ripiego cfg)  ->  RMS ammesso 455 N
+      COMFORT scala 0.315 m/s^2 = cfg.xi_ott_comfort_rif   [soglia ISO 2631-1, non un limite: e' la scala dell'obiettivo]
+    Griglia 21x15 = 315 candidati, finestra 2 s, penalita' 1000
+    Data augmentation: 48 strade sintetiche ISO 8608 (buche/dossi bruschi, gradini, salite/discese)
+    Griglia fattoriale: 5 classi x 5 velocita' = 25 celle | training 21 celle | validazione 4 celle (DISGIUNTE)
+    Crossover r=√2 a v ≈ 53 km/h: le tracce a velocita' variabile lo attraversano a rugosita' costante
+      train  1: classe E (x1.09)  v   36-  42 km/h [costante]  RMS a_z= 5.13 m/s^2  ostacoli= 5  n_max=2.83 c/m
+      train  2: classe B (x1.10)  v   20-  97 km/h [rampa   ]  RMS a_z= 1.17 m/s^2  ostacoli=15  n_max=1.48 c/m
+      train  3: classe C (x0.77)  v   42- 100 km/h [urbano  ]  RMS a_z= 1.99 m/s^2  ostacoli= 7  n_max=1.43 c/m
+      train  4: classe C (x1.71)  v   19-  24 km/h [costante]  RMS a_z= 1.59 m/s^2  ostacoli= 9  n_max=2.83 c/m
+      train  5: classe E (x1.86)  v   73-  79 km/h [costante]  RMS a_z= 9.20 m/s^2  ostacoli=21  n_max=1.83 c/m
+      train  6: classe B (x1.29)  v   19-  24 km/h [costante]  RMS a_z= 0.71 m/s^2  ostacoli= 3  n_max=2.83 c/m
+      train  7: classe A (x1.65)  v   19-  78 km/h [rampa   ]  RMS a_z= 0.82 m/s^2  ostacoli= 5  n_max=1.86 c/m
+      train  8: classe E (x1.08)  v   95- 100 km/h [costante]  RMS a_z= 8.23 m/s^2  ostacoli=20  n_max=1.44 c/m
+      train  9: classe B (x0.78)  v   42-  99 km/h [urbano  ]  RMS a_z= 1.56 m/s^2  ostacoli=15  n_max=1.45 c/m
+      train 10: classe A (x1.17)  v   30-  75 km/h [urbano  ]  RMS a_z= 0.72 m/s^2  ostacoli=10  n_max=1.91 c/m
+      train 11: classe D (x1.27)  v   24-  58 km/h [rampa   ]  RMS a_z= 3.53 m/s^2  ostacoli=14  n_max=2.47 c/m
+      train 12: classe A (x1.71)  v   11-  78 km/h [sweep   ]  RMS a_z= 0.54 m/s^2  ostacoli= 2  n_max=1.85 c/m
+      train 13: classe D (x1.35)  v   37-  89 km/h [rampa   ]  RMS a_z= 4.13 m/s^2  ostacoli=16  n_max=1.63 c/m
+      train 14: classe C (x0.99)  v   11-  87 km/h [sweep   ]  RMS a_z= 2.09 m/s^2  ostacoli=12  n_max=1.66 c/m
+      train 15: classe D (x1.77)  v   11-  75 km/h [sweep   ]  RMS a_z= 4.38 m/s^2  ostacoli=30  n_max=1.91 c/m
+      train 16: classe C (x1.91)  v   54-  60 km/h [costante]  RMS a_z= 2.60 m/s^2  ostacoli= 7  n_max=2.40 c/m
+      train 17: classe E (x0.68)  v   32-  75 km/h [urbano  ]  RMS a_z= 4.91 m/s^2  ostacoli= 9  n_max=1.91 c/m
+      train 18: classe B (x1.88)  v   30-  75 km/h [urbano  ]  RMS a_z= 1.65 m/s^2  ostacoli=12  n_max=1.92 c/m
+      train 19: classe B (x1.69)  v   21-  52 km/h [urbano  ]  RMS a_z= 1.09 m/s^2  ostacoli= 4  n_max=2.78 c/m
+      train 20: classe A (x0.97)  v   46- 108 km/h [sweep   ]  RMS a_z= 0.61 m/s^2  ostacoli= 5  n_max=1.34 c/m
+      train 21: classe D (x1.85)  v   73-  79 km/h [costante]  RMS a_z= 5.49 m/s^2  ostacoli=28  n_max=1.82 c/m
+      train 22: classe E (x1.25)  v   36-  42 km/h [costante]  RMS a_z= 5.49 m/s^2  ostacoli=10  n_max=2.83 c/m
+      train 23: classe B (x1.63)  v   95- 101 km/h [costante]  RMS a_z= 2.27 m/s^2  ostacoli=22  n_max=1.43 c/m
+      train 24: classe C (x1.32)  v   73-  79 km/h [costante]  RMS a_z= 2.57 m/s^2  ostacoli= 7  n_max=1.82 c/m
+      train 25: classe C (x1.33)  v   21-  93 km/h [rampa   ]  RMS a_z= 1.93 m/s^2  ostacoli=10  n_max=1.55 c/m
+      train 26: classe E (x1.01)  v   41-  92 km/h [sweep   ]  RMS a_z= 6.42 m/s^2  ostacoli=13  n_max=1.57 c/m
+      train 27: classe B (x1.78)  v   20-  25 km/h [costante]  RMS a_z= 1.22 m/s^2  ostacoli= 8  n_max=2.83 c/m
+      train 28: classe A (x1.37)  v   73-  79 km/h [costante]  RMS a_z= 1.24 m/s^2  ostacoli=11  n_max=1.82 c/m
+      train 29: classe E (x1.88)  v   94-  99 km/h [costante]  RMS a_z=10.82 m/s^2  ostacoli=30  n_max=1.45 c/m
+      train 30: classe B (x1.49)  v   30-  77 km/h [rampa   ]  RMS a_z= 1.69 m/s^2  ostacoli=14  n_max=1.88 c/m
+      train 31: classe A (x1.81)  v   55-  61 km/h [costante]  RMS a_z= 1.15 m/s^2  ostacoli=14  n_max=2.36 c/m
+      train 32: classe D (x1.41)  v   32-  74 km/h [urbano  ]  RMS a_z= 3.94 m/s^2  ostacoli=15  n_max=1.95 c/m
+      train 33: classe A (x0.87)  v   18-  25 km/h [costante]  RMS a_z= 0.33 m/s^2  ostacoli= 1  n_max=2.83 c/m
+      train 34: classe D (x0.98)  v   37-  42 km/h [costante]  RMS a_z= 2.71 m/s^2  ostacoli= 6  n_max=2.83 c/m
+      train 35: classe C (x1.67)  v   22-  53 km/h [urbano  ]  RMS a_z= 1.81 m/s^2  ostacoli= 3  n_max=2.70 c/m
+      train 36: classe D (x1.03)  v   19-  25 km/h [costante]  RMS a_z= 2.14 m/s^2  ostacoli= 4  n_max=2.83 c/m
+      train 37: classe C (x1.07)  v   55-  61 km/h [costante]  RMS a_z= 2.03 m/s^2  ostacoli=10  n_max=2.37 c/m
+      train 38: classe E (x1.49)  v   27-  84 km/h [sweep   ]  RMS a_z= 7.21 m/s^2  ostacoli=19  n_max=1.71 c/m
+      train 39: classe B (x0.81)  v   21-  91 km/h [sweep   ]  RMS a_z= 1.52 m/s^2  ostacoli=16  n_max=1.58 c/m
+      train 40: classe B (x0.63)  v   38-  85 km/h [rampa   ]  RMS a_z= 1.26 m/s^2  ostacoli=12  n_max=1.69 c/m
+      train 41: classe A (x1.73)  v   19-  99 km/h [rampa   ]  RMS a_z= 0.72 m/s^2  ostacoli=10  n_max=1.46 c/m
+      train 42: classe D (x0.63)  v   73-  78 km/h [costante]  RMS a_z= 3.15 m/s^2  ostacoli=10  n_max=1.84 c/m
+      train 43: classe E (x1.04)  v   11-  81 km/h [sweep   ]  RMS a_z= 5.65 m/s^2  ostacoli=16  n_max=1.77 c/m
+      train 44: classe B (x1.59)  v   95- 101 km/h [costante]  RMS a_z= 1.77 m/s^2  ostacoli=10  n_max=1.43 c/m
+      train 45: classe C (x1.08)  v   73-  79 km/h [costante]  RMS a_z= 2.88 m/s^2  ostacoli=22  n_max=1.82 c/m
+      train 46: classe C (x1.05)  v   18-  25 km/h [costante]  RMS a_z= 0.87 m/s^2  ostacoli= 0  n_max=2.83 c/m
+      train 47: classe E (x0.72)  v   73-  78 km/h [costante]  RMS a_z= 6.13 m/s^2  ostacoli=14  n_max=1.84 c/m
+      train 48: classe B (x1.34)  v   19-  24 km/h [costante]  RMS a_z= 1.07 m/s^2  ostacoli= 9  n_max=2.83 c/m
+      valid  1: classe C (x0.62)  v   20-  98 km/h [rampa   ]  RMS a_z= 1.81 m/s^2  ostacoli=18  n_max=1.48 c/m
+      valid  2: classe E (x0.62)  v   19-  24 km/h [costante]  RMS a_z= 2.92 m/s^2  ostacoli= 3  n_max=2.83 c/m
+      valid  3: classe A (x1.44)  v   11-  86 km/h [sweep   ]  RMS a_z= 0.46 m/s^2  ostacoli= 3  n_max=1.68 c/m
+      valid  4: classe D (x1.08)  v   53- 119 km/h [urbano  ]  RMS a_z= 4.59 m/s^2  ostacoli=21  n_max=1.21 c/m
+    Campioni TRAIN      : 566864  (50 tracce = reali + sintetiche)
+    Etichetta FORZA     : |F*| max 1500 N su un limite di 1500 N  |  satura nel 0.16% dei campioni
+    Campioni VALID reale: 157458  (3a traccia registrata, mai vista)
+    Campioni VALID sint.: 17200  (4 strade su celle classe x velocita' DISGIUNTE dal training)
+    Normalizzazione (dai dati di training): Normalizzatore(a_z: media=+0.0009 std=2.1060 | v: media=12.037 std=6.986)
+    Salvata in normalizzatore.json
+
+[2] Addestramento di DUE reti separate (Loss() e Optimizer indipendenti)...
+    Scarto etichette dal baseline 'comfort' [logit]: mediana 1.82 | p90 3.31 | p99 4.03 | max 8.77
+    -> alpha suggerito (max scarto +10%) = 9.65   |   alpha finale in config = 7.00
+    [!] alpha finale TROPPO PICCOLO: la correzione satura e la rete non puo' raggiungere xi*. Alzo a 9.65.
+    Rete xi = sigmoid(L(v) + alpha*Delta(a_z,v)) con alpha da 0.30 a 9.65 (curriculum)
+    Regolarizzazione: rete xi lr=1e-04 wd=3e-04  |  rete forza lr=1e-05 wd=1e-05
+    loss forza: Huber con delta = 0.1779 (= 2 x 1.4826 x MAD = 2 x 0.0890)  |  curtosi in eccesso del target 8.1  |  14.5% dei campioni nel ramo lineare
+    loss xi: MSE pesata per strato (target senza code, ma con una massa al minimo del damper: serve il peso, non la robustezza)
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 0.3000
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.999791 max=1.000000 mean=0.921587
+beta*Delta Intoccato      min=-0.299937 max=0.300000 mean=0.276476
+Delta Clampato [-1,1]     min=-0.999791 max=1.000000 mean=0.921587
+beta*Delta Clampato       min=-0.299937 max=0.300000 mean=0.276476
+L(v) + beta*Delta         min=-3.776036 max=-3.176099 mean=-3.199623
+L(v) + beta*Delta Clampato min=-3.776036 max=-3.176099 mean=-3.199623
+    Epoca 01/12  (alpha=0.30)  |  RETE xi: Loss(Train)=0.10504  Loss(Valid)=0.02836  |  RETE F: Loss(Train)=0.00775  Loss(Valid)=0.00215
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 1.6352
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.781433 max=1.000000 mean=0.624683
+beta*Delta Intoccato      min=-1.277793 max=1.635192 mean=1.021476
+Delta Clampato [-1,1]     min=-0.781433 max=1.000000 mean=0.624683
+beta*Delta Clampato       min=-1.277793 max=1.635192 mean=1.021476
+L(v) + beta*Delta         min=-4.753892 max=-1.840907 mean=-2.454623
+L(v) + beta*Delta Clampato min=-4.753892 max=-1.840907 mean=-2.454623
+
+DEBUG EPOCA 3
+Coefficiente Alpha (beta buffer) = 2.9704
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.923802 max=0.841384 mean=0.200048
+beta*Delta Intoccato      min=-2.744045 max=2.499233 mean=0.594218
+Delta Clampato [-1,1]     min=-0.923802 max=0.841384 mean=0.200048
+beta*Delta Clampato       min=-2.744045 max=2.499233 mean=0.594218
+L(v) + beta*Delta         min=-6.220144 max=-0.976866 mean=-2.881880
+L(v) + beta*Delta Clampato min=-6.220144 max=-0.976866 mean=-2.881880
+    Epoca 03/12  (alpha=2.97)  |  RETE xi: Loss(Train)=0.01953  Loss(Valid)=0.01287  |  RETE F: Loss(Train)=0.00241  Loss(Valid)=0.00180
+
+DEBUG EPOCA 4
+Coefficiente Alpha (beta buffer) = 4.3056
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.910293 max=0.499237 mean=0.025794
+beta*Delta Intoccato      min=-3.919334 max=2.149502 mean=0.111059
+Delta Clampato [-1,1]     min=-0.910293 max=0.499237 mean=0.025794
+beta*Delta Clampato       min=-3.919334 max=2.149502 mean=0.111059
+L(v) + beta*Delta         min=-7.395432 max=-1.326596 mean=-3.365040
+L(v) + beta*Delta Clampato min=-7.395432 max=-1.326596 mean=-3.365040
+
+DEBUG EPOCA 5
+Coefficiente Alpha (beta buffer) = 5.6408
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.802536 max=0.394401 mean=-0.025089
+beta*Delta Intoccato      min=-4.526917 max=2.224725 mean=-0.141523
+Delta Clampato [-1,1]     min=-0.802536 max=0.394401 mean=-0.025089
+beta*Delta Clampato       min=-4.526917 max=2.224725 mean=-0.141523
+L(v) + beta*Delta         min=-8.003016 max=-1.251374 mean=-3.617622
+L(v) + beta*Delta Clampato min=-8.003016 max=-1.251374 mean=-3.617622
+
+DEBUG EPOCA 6
+Coefficiente Alpha (beta buffer) = 6.9760
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.749699 max=0.379881 mean=-0.114443
+beta*Delta Intoccato      min=-5.229873 max=2.650035 mean=-0.798350
+Delta Clampato [-1,1]     min=-0.749699 max=0.379881 mean=-0.114443
+beta*Delta Clampato       min=-5.229873 max=2.650035 mean=-0.798350
+L(v) + beta*Delta         min=-8.705972 max=-0.826064 mean=-4.274449
+L(v) + beta*Delta Clampato min=-8.705972 max=-0.826064 mean=-4.274449
+    Epoca 06/12  (alpha=6.98)  |  RETE xi: Loss(Train)=0.00310  Loss(Valid)=0.01478  |  RETE F: Loss(Train)=0.00195  Loss(Valid)=0.00176
+
+DEBUG EPOCA 7
+Coefficiente Alpha (beta buffer) = 8.3112
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.738875 max=0.367693 mean=-0.181729
+beta*Delta Intoccato      min=-6.140899 max=3.055949 mean=-1.510379
+Delta Clampato [-1,1]     min=-0.738875 max=0.367693 mean=-0.181729
+beta*Delta Clampato       min=-6.140899 max=3.055949 mean=-1.510379
+L(v) + beta*Delta         min=-9.616998 max=-0.420150 mean=-4.986478
+L(v) + beta*Delta Clampato min=-9.616998 max=-0.420150 mean=-4.986478
+
+DEBUG EPOCA 8
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.750766 max=0.309613 mean=-0.144645
+beta*Delta Intoccato      min=-7.242146 max=2.986635 mean=-1.395293
+Delta Clampato [-1,1]     min=-0.750766 max=0.309613 mean=-0.144645
+beta*Delta Clampato       min=-7.242146 max=2.986635 mean=-1.395293
+L(v) + beta*Delta         min=-10.718246 max=-0.489464 mean=-4.871391
+L(v) + beta*Delta Clampato min=-10.718246 max=-0.489464 mean=-4.871391
+
+DEBUG EPOCA 9
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.612113 max=0.342594 mean=-0.108800
+beta*Delta Intoccato      min=-5.904652 max=3.304784 mean=-1.049519
+Delta Clampato [-1,1]     min=-0.612113 max=0.342594 mean=-0.108800
+beta*Delta Clampato       min=-5.904652 max=3.304784 mean=-1.049519
+L(v) + beta*Delta         min=-9.380751 max=-0.171315 mean=-4.525618
+L(v) + beta*Delta Clampato min=-9.380751 max=-0.171315 mean=-4.525618
+    Epoca 09/12  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00185  Loss(Valid)=0.01555  |  RETE F: Loss(Train)=0.00172  Loss(Valid)=0.00179
+
+DEBUG EPOCA 10
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.645838 max=0.311209 mean=-0.099803
+beta*Delta Intoccato      min=-6.229975 max=3.002027 mean=-0.962732
+Delta Clampato [-1,1]     min=-0.645838 max=0.311209 mean=-0.099803
+beta*Delta Clampato       min=-6.229975 max=3.002027 mean=-0.962732
+L(v) + beta*Delta         min=-9.706074 max=-0.474072 mean=-4.438831
+L(v) + beta*Delta Clampato min=-9.706074 max=-0.474072 mean=-4.438831
+
+DEBUG EPOCA 11
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.695891 max=0.308498 mean=-0.129706
+beta*Delta Intoccato      min=-6.712807 max=2.975874 mean=-1.251189
+Delta Clampato [-1,1]     min=-0.695891 max=0.308498 mean=-0.129706
+beta*Delta Clampato       min=-6.712807 max=2.975874 mean=-1.251189
+L(v) + beta*Delta         min=-10.188906 max=-0.500225 mean=-4.727287
+L(v) + beta*Delta Clampato min=-10.188906 max=-0.500225 mean=-4.727287
+
+DEBUG EPOCA 12
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.707059 max=0.311207 mean=-0.115580
+beta*Delta Intoccato      min=-6.820538 max=3.002007 mean=-1.114921
+Delta Clampato [-1,1]     min=-0.707059 max=0.311207 mean=-0.115580
+beta*Delta Clampato       min=-6.820538 max=3.002007 mean=-1.114921
+L(v) + beta*Delta         min=-10.296637 max=-0.474092 mean=-4.591020
+L(v) + beta*Delta Clampato min=-10.296637 max=-0.474092 mean=-4.591020
+    Epoca 12/12  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00123  Loss(Valid)=0.01579  |  RETE F: Loss(Train)=0.00153  Loss(Valid)=0.00186
+    Rollout su 48 strade sintetiche NUOVE (seme 1234+4441, celle identiche al training) + 2 registrate
+
+[2b] DAgger: allineamento fra dati di addestramento e stati visitati
+    Preparate 50 strade per l'aggregazione (20 s ciascuna), di cui 48 con strada VERA nota; etichette dell'esperto calcolate una volta
+    Validazione ricalibrata su rollout closed-loop di 4 strade di validazione (la vecchia era sulla distribuzione passiva)
+    giro 1/5  beta=1.00  |  RMS a_z visitata 3.600 contro 2.106 nel dataset  |  |xi_applicato - xi*| = 0.0000  |  campioni 566864 -> 653945
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.039163 max=0.317337 mean=0.203209
+beta*Delta Intoccato      min=-0.377784 max=3.061144 mean=1.960219
+Delta Clampato [-1,1]     min=-0.039163 max=0.317337 mean=0.203209
+beta*Delta Clampato       min=-0.377784 max=3.061144 mean=1.960219
+L(v) + beta*Delta         min=-3.853883 max=-0.414955 mean=-1.515880
+L(v) + beta*Delta Clampato min=-3.853883 max=-0.414955 mean=-1.515880
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00648  Loss(Valid)=0.00714  |  RETE F: Loss(Train)=0.00209  Loss(Valid)=0.00199
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.073152 max=0.337884 mean=0.191570
+beta*Delta Intoccato      min=-0.705653 max=3.259341 mean=1.847947
+Delta Clampato [-1,1]     min=-0.073152 max=0.337884 mean=0.191570
+beta*Delta Clampato       min=-0.705653 max=3.259341 mean=1.847947
+L(v) + beta*Delta         min=-4.181752 max=-0.216758 mean=-1.628151
+L(v) + beta*Delta Clampato min=-4.181752 max=-0.216758 mean=-1.628151
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00407  Loss(Valid)=0.00883  |  RETE F: Loss(Train)=0.00199  Loss(Valid)=0.00192
+    giro 2/5  beta=0.40  |  RMS a_z visitata 3.566 contro 2.375 nel dataset  |  |xi_applicato - xi*| = 0.0196  |  campioni 566864 -> 741026
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.034675 max=0.362701 mean=0.193610
+beta*Delta Intoccato      min=-0.334483 max=3.498739 mean=1.867631
+Delta Clampato [-1,1]     min=-0.034675 max=0.362701 mean=0.193610
+beta*Delta Clampato       min=-0.334483 max=3.498739 mean=1.867631
+L(v) + beta*Delta         min=-3.810582 max=0.022641 mean=-1.608468
+L(v) + beta*Delta Clampato min=-3.810582 max=0.022641 mean=-1.608468
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00337  Loss(Valid)=0.00883  |  RETE F: Loss(Train)=0.00202  Loss(Valid)=0.00187
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.142781 max=0.355228 mean=0.136003
+beta*Delta Intoccato      min=-1.377319 max=3.426655 mean=1.311927
+Delta Clampato [-1,1]     min=-0.142781 max=0.355228 mean=0.136003
+beta*Delta Clampato       min=-1.377319 max=3.426655 mean=1.311927
+L(v) + beta*Delta         min=-4.853418 max=-0.049444 mean=-2.164171
+L(v) + beta*Delta Clampato min=-4.853418 max=-0.049444 mean=-2.164171
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00280  Loss(Valid)=0.01061  |  RETE F: Loss(Train)=0.00190  Loss(Valid)=0.00189
+    giro 3/5  beta=0.16  |  RMS a_z visitata 3.544 contro 2.557 nel dataset  |  |xi_applicato - xi*| = 0.0283  |  campioni 566864 -> 828107
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.223295 max=0.335469 mean=0.118845
+beta*Delta Intoccato      min=-2.153977 max=3.236052 mean=1.146424
+Delta Clampato [-1,1]     min=-0.223295 max=0.335469 mean=0.118845
+beta*Delta Clampato       min=-2.153977 max=3.236052 mean=1.146424
+L(v) + beta*Delta         min=-5.630076 max=-0.240047 mean=-2.329675
+L(v) + beta*Delta Clampato min=-5.630076 max=-0.240047 mean=-2.329675
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00235  Loss(Valid)=0.00867  |  RETE F: Loss(Train)=0.00188  Loss(Valid)=0.00184
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.142670 max=0.284495 mean=0.094727
+beta*Delta Intoccato      min=-1.376248 max=2.744341 mean=0.913768
+Delta Clampato [-1,1]     min=-0.142670 max=0.284495 mean=0.094727
+beta*Delta Clampato       min=-1.376248 max=2.744341 mean=0.913768
+L(v) + beta*Delta         min=-4.852346 max=-0.731758 mean=-2.562330
+L(v) + beta*Delta Clampato min=-4.852346 max=-0.731758 mean=-2.562330
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00196  Loss(Valid)=0.01048  |  RETE F: Loss(Train)=0.00180  Loss(Valid)=0.00187
+    giro 4/5  beta=0.06  |  RMS a_z visitata 3.512 contro 2.689 nel dataset  |  |xi_applicato - xi*| = 0.0273  |  campioni 566864 -> 915188
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.231362 max=0.298889 mean=0.098032
+beta*Delta Intoccato      min=-2.231798 max=2.883189 mean=0.945654
+Delta Clampato [-1,1]     min=-0.231362 max=0.298889 mean=0.098032
+beta*Delta Clampato       min=-2.231798 max=2.883189 mean=0.945654
+L(v) + beta*Delta         min=-5.707896 max=-0.592909 mean=-2.530445
+L(v) + beta*Delta Clampato min=-5.707896 max=-0.592909 mean=-2.530445
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00162  Loss(Valid)=0.00997  |  RETE F: Loss(Train)=0.00180  Loss(Valid)=0.00193
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.245048 max=0.224454 mean=0.064699
+beta*Delta Intoccato      min=-2.363815 max=2.165156 mean=0.624111
+Delta Clampato [-1,1]     min=-0.245048 max=0.224454 mean=0.064699
+beta*Delta Clampato       min=-2.363815 max=2.165156 mean=0.624111
+L(v) + beta*Delta         min=-5.839913 max=-1.310943 mean=-2.851988
+L(v) + beta*Delta Clampato min=-5.839913 max=-1.310943 mean=-2.851988
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00139  Loss(Valid)=0.00991  |  RETE F: Loss(Train)=0.00173  Loss(Valid)=0.00190
+    giro 5/5  beta=0.03  |  RMS a_z visitata 3.510 contro 2.788 nel dataset  |  |xi_applicato - xi*| = 0.0262  |  campioni 566864 -> 1002269
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.215799 max=0.273202 mean=0.073487
+beta*Delta Intoccato      min=-2.081669 max=2.635396 mean=0.708885
+Delta Clampato [-1,1]     min=-0.215799 max=0.273202 mean=0.073487
+beta*Delta Clampato       min=-2.081669 max=2.635396 mean=0.708885
+L(v) + beta*Delta         min=-5.557768 max=-0.840702 mean=-2.767214
+L(v) + beta*Delta Clampato min=-5.557768 max=-0.840702 mean=-2.767214
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00119  Loss(Valid)=0.00940  |  RETE F: Loss(Train)=0.00172  Loss(Valid)=0.00208
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.182449 max=0.234229 mean=0.076751
+beta*Delta Intoccato      min=-1.759966 max=2.259458 mean=0.740367
+Delta Clampato [-1,1]     min=-0.182449 max=0.234229 mean=0.076751
+beta*Delta Clampato       min=-1.759966 max=2.259458 mean=0.740367
+L(v) + beta*Delta         min=-5.236064 max=-1.216641 mean=-2.735732
+L(v) + beta*Delta Clampato min=-5.236064 max=-1.216641 mean=-2.735732
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00104  Loss(Valid)=0.00843  |  RETE F: Loss(Train)=0.00166  Loss(Valid)=0.00203
+
+==========================================================================================
+ VALIDAZIONE — confronto fra valori APPRESI e valori CALCOLATI, su dati mai visti
+==========================================================================================
+ xi predetto / F predetta : APPRESO dalle reti (solo a_z passata + v)
+ xi* / F* di riferimento  : CALCOLATO per ottimizzazione (conosce la strada e lo stato vero)
+
+ [A] REGISTRATA: thessaloniki_19_11_2023.pkl  |  2525 s  |  v 0-55 km/h  |  RMS a_z 0.32 m/s^2  |  rugosita' equivalente classe ISO B
+   xi(t)    -> R^2: +0.2349 | RMSE: 0.0793 | MAE: 0.0386 | dev.std target: 0.0906
+   forza(t) -> R^2: +0.7577 | RMSE: 92.2 N | MAE: 60.9 N
+   picchi   -> |F| max: target 1421 N, ML 944 N (-34%) | margine ML sul limite 37%
+                saturazione a ±1500 N: target 0.00%, ML 0.00% | sui picchi (|F*|>50% del max) il ML sta -411 N
+
+ [B] SINTETICHE, celle classe x velocita' DISGIUNTE dal training
+     valid  1 ISO C(x0.62) 20-98 km/h [rampa]; valid  2 ISO E(x0.62) 19-24 km/h [costante]; valid  3 ISO A(x1.44) 11-86 km/h [sweep]; valid  4 ISO D(x1.08) 53-119 km/h [urbano]
+   xi(t)    -> R^2: +0.8785 | RMSE: 0.0428 | MAE: 0.0300 | dev.std target: 0.1228
+   forza(t) -> R^2: +0.8098 | RMSE: 108.1 N | MAE: 62.1 N
+   picchi   -> |F| max: target 1500 N, ML 1500 N (+0%) | margine ML sul limite 0%
+                saturazione a ±1500 N: target 0.49%, ML 0.20% | sui picchi (|F*|>50% del max) il ML sta -366 N
+     ^ [B] e' il test severo: rugosita' x velocita' mai viste insieme.
+
+ |forza| max prevista dal ML: 943.7 N  (limite 1500 N, margine 37%)
+
+ COMFORT in CLOSED-LOOP — RMS accelerazione cassa
+   dati: thessaloniki_19_11_2023.pkl, primi 60 s  (v 0-15 km/h, rugosita' equivalente classe ISO B)
+   passiva  0.166 m/s^2
+   ML       0.042 m/s^2   (+74.4% vs passiva)
+   ottimo   0.038 m/s^2   (+76.9% vs passiva)  <- il tetto raggiungibile con le etichette
+
+--------------------------------------------------------------------------
+ ETICHETTE OTTIME: xi* in funzione della RUGOSITA' (RMS a_z) e della velocita'   [strade sintetiche]
+--------------------------------------------------------------------------
+RMS a_z        | v [km/h]  | xi* medio  | |forza| [N]
+0.12-0.67      | 41.4      | 0.114      | 134
+0.67-2.15      | 51.2      | 0.325      | 100
+2.15-3.11      | 38.7      | 0.336      | 181
+3.11-7.95      | 80.3      | 0.321      | 178
+ TENUTA DI STRADA su thessaloniki_19_11_2023.pkl (60 s) — RMS deflessione pneumatico: passiva 0.24 mm -> ML 0.08 mm   (limite ammesso 4.66 mm)
+
+ BILANCIO ENERGETICO — integrali su 60 s di thessaloniki_19_11_2023.pkl
+   IPOTESI  damper    : damper IDRAULICO: il suo calore NON e' recuperabile ed e' escluso dal recupero
+   IPOTESI  attuatore : attuatore ideale in trazione (eta_attuatore = 100%): il costo e' un LIMITE INFERIORE
+   CONVENZIONE: le voci misurate sono MODULI (>=0), il verso e' nel nome. Il bilancio ha segno
+   dal punto di vista della BATTERIA: <0 esce, >0 rientra. I joule scalano con la durata: non sono una potenza.
+   MECCANICA  damper dissipato in calore nell'olio — PERSO, fuori bilancio :     4.1 J
+   MECCANICA  attuatore, lavoro fatto sul veicolo (spinge)                :     7.5 J
+   MECCANICA  attuatore, lavoro ricevuto dal veicolo (frena)              :    12.1 J
+   ELETTRICO  ADDEBITO  = lavoro in spinta / eta_attuatore                :    -7.5 J   (esce dalla batteria)
+   ELETTRICO  ACCREDITO = eta*(ATTUATORE assorbita)                      :    +7.3 J   (rientra in batteria)
+   ELETTRICO  NETTO     = accredito - addebito                            :    -0.2 J  -> COSTO NETTO (esce dalla batteria piu' di quanto rientra)
+   [sensibilita'] con le perdite di trazione al 60% come il generatore, il netto sarebbe -5.1 J
+   [sensibilita'] con un damper ELETTROMAGNETICO al posto dell'idraulico il netto sarebbe +2.3 J
+################################################################################################
+#  DIAGNOSTICA FISICA — xi deve seguire xi* ottimo: dipende dalla RUGOSITA' (da a_z) e dalla velocita'
+#  2026-08-01 01:13   |   vincolo strutturale: ATTIVO alpha=9.65   |   metodo_freq: velocita
+################################################################################################
+
+================================================================================================
+ 1) MAPPA xi(v, RMS a_z) — OPEN LOOP
+================================================================================================
+ DATI      : banca di finestre di a_z generate col modello PASSIVO su profili ISO
+             8608 classi B,C,D,E a 29/58/86 km/h, poi RISCALATE al livello di RMS
+             indicato in riga. La FORMA spettrale resta realistica, cambia solo
+             l'ampiezza: e' un esperimento controllato, una variabile per volta.
+ xi        : APPRESO dalla rete (uscita, non etichetta). Media su tutte le finestre.
+ NB        : e' OPEN LOOP — a_z e' imposta dall'esterno, non prodotta dal controllo.
+             Per il comportamento reale vedi la mappa closed-loop al punto 2.
+    Righe = livello di a_z, colonne = velocita'. Quindi:
+      lungo una RIGA (a_z fissa, v che cresce) xi deve SCENDERE da xi_max a xi_min;
+      lungo una COLONNA (v fissa, a_z che cresce) xi deve restare QUASI COSTANTE.
+
+  RMS a_z \ v [km/h]      14     22     29     36     43     50     58     65     72     79     86     94    101    108
+  ---------------------------------------------------------------------------------------------------------------------
+     6.00 m/s^2        0.357  0.350  0.344  0.341  0.340  0.340  0.341  0.342  0.342  0.342  0.341  0.341  0.340  0.340
+     3.88 m/s^2        0.349  0.342  0.337  0.335  0.334  0.335  0.336  0.338  0.338  0.338  0.337  0.336  0.335  0.334
+     2.51 m/s^2        0.328  0.323  0.321  0.321  0.324  0.328  0.333  0.337  0.339  0.339  0.338  0.336  0.335  0.334
+     1.63 m/s^2        0.296  0.295  0.296  0.301  0.308  0.318  0.328  0.335  0.340  0.340  0.339  0.336  0.333  0.330
+     1.05 m/s^2        0.244  0.248  0.255  0.266  0.279  0.295  0.310  0.321  0.327  0.328  0.325  0.320  0.314  0.309
+     0.68 m/s^2        0.132  0.142  0.154  0.169  0.187  0.206  0.225  0.239  0.246  0.247  0.242  0.236  0.229  0.222
+     0.44 m/s^2        0.097  0.102  0.109  0.118  0.130  0.145  0.160  0.171  0.177  0.176  0.171  0.165  0.158  0.153
+     0.29 m/s^2        0.092  0.095  0.100  0.106  0.113  0.122  0.130  0.137  0.140  0.139  0.136  0.131  0.127  0.124
+     0.18 m/s^2        0.087  0.089  0.091  0.094  0.098  0.102  0.106  0.109  0.110  0.110  0.109  0.107  0.106  0.104
+     0.12 m/s^2        0.086  0.087  0.089  0.092  0.094  0.097  0.100  0.102  0.103  0.103  0.102  0.101  0.100  0.099
+     0.08 m/s^2        0.086  0.087  0.089  0.091  0.094  0.096  0.099  0.101  0.102  0.102  0.101  0.100  0.099  0.099
+     0.05 m/s^2        0.085  0.087  0.089  0.091  0.093  0.096  0.099  0.100  0.101  0.101  0.101  0.100  0.099  0.098
+  ---------------------------------------------------------------------------------------------------------------------
+  BASELINE √2 (solo v)   0.683  0.662  0.629  0.580  0.514  0.434  0.349  0.270  0.207  0.162  0.131  0.111  0.099  0.092
+  [range damper: xi_min=0.082  xi_max=0.716]
+
+================================================================================================
+ 2) xi MEDIO IN CLOSED-LOOP su strade ISO 8608 (anello di retroazione CHIUSO)
+================================================================================================
+ DATI      : 5 profili ISO 8608 (classi A, B, C, D, E) x 5 velocita' costanti, 12 s ciascuno,
+             generati come le strade di TRAINING (ostacoli, pendenze, spettro ISO).
+             Ogni cella e' la MEDIA di 5 realizzazioni con semi diversi:
+             con una sola strada per cella si legge il sorteggio degli ostacoli.
+             Scartato il 20% iniziale (warm-up: la finestra parte piena di zeri).
+ xi rete   : APPRESO — la rete legge la propria a_z controllata e comanda.
+ xi* target: CALCOLATO su QUELLA strada per ottimizzazione vincolata (conosce z_r).
+  classe \ v [km/h]         22       40       58       76       97
+  ----------------------------------------------------------------
+  A (liscia)           0.089    0.102    0.123    0.156    0.147
+  B                    0.096    0.125    0.213    0.289    0.277
+  C                    0.121    0.263    0.337    0.338    0.310
+  D                    0.307    0.321    0.332    0.327    0.327
+  E (sconnessa)        0.341    0.339    0.341    0.342    0.344
+  ----------------------------------------------------------------
+
+  TARGET xi* per classe (l'ottimo su QUELLA strada: cambia riga per riga):
+    A:    0.082   0.101   0.094   0.134   0.159
+    B:    0.083   0.123   0.247   0.195   0.255
+    C:    0.100   0.227   0.300   0.330   0.322
+    D:    0.212   0.325   0.339   0.333   0.348
+    E:    0.345   0.348   0.363   0.359   0.368
+  baseline √2 (solo v):    0.662   0.549   0.349   0.182   0.105
+
+  RMS a_z closed-loop [m/s^2] (per capire quanto e' fuori distribuzione):
+    A:     0.19    0.32    0.36    0.58    0.76
+    B:     0.25    0.54    1.11    1.05    1.66
+    C:     0.55    1.72    1.57    2.07    3.07
+    D:     1.81    2.61    3.11    3.98    4.40
+    E:     3.52    4.84    6.09    6.97    7.89
+
+  Errore medio  |xi_rete - xi*| = 0.022
+  Errore MASSIMO                = 0.094 (classe D, 22 km/h: xi=0.307 contro xi*=0.212)
+
+  RUMORE DEL TARGET (da 5 realizzazioni della stessa cella):
+    scarto tipo fra realizzazioni     : 0.035   (max 0.122)
+    incertezza sulla MEDIA riportata  : 0.016   <- barra d'errore delle celle qui sopra
+    celle con errore oltre 2 barre    : 8 su 25   (le altre sono compatibili col rumore)
+    bias medio con segno              : +0.009   (rete piu RIGIDA del target)
+
+  Escursione di xi* fra classe A ed E, a parita' di velocita' : 0.243
+  Escursione prodotta dalla RETE                              : 0.218
+  (se la prima e' grande e la seconda ~0, la rete sta ignorando la strada;
+   se la prima e' ~0, e' il TARGET a non dipendere dalla strada)
+
+================================================================================================
+ 3) DISTRIBUZIONE DATASET (TRAINING) — dove vivono i campioni nel piano (v, a_z)
+================================================================================================
+ DATI      : 50 tracce di TRAINING (2 reali registrate + 48 sintetiche ISO 8608), finestre da 2 s
+ xi        : ETICHETTA calcolata (target), non uscita della rete
+  campioni analizzati: 150000 (sottocampionati da 566864)
+  v     [km/h] : min    7.2  mediana   37.7  max  107.7
+  RMS a_z      : min  0.053  mediana  0.343  max 13.329
+  xi target    : min  0.082  mediana  0.082  max  0.716
+
+  corr(RMS a_z, xi)          = +0.630   <- il SEGNALE VERO (xi* dipende dalla rugosita')
+  Spearman(RMS a_z, xi)      = +0.741
+  corr(v, xi)                = +0.527   <- informazione COMPLEMENTARE: serve a convertire a_z in rugosita'
+  corr(RMS a_z, v)           = +0.413   <- quanto a_z e v sono confuse fra loro
+  corr parziale (a v fissa)  = +0.532   <- quanto conta a_z A PARITA' di velocita' (deve essere grande)
+  copertura griglia (v x a_z)= 94%      <- alta = disegno fattoriale, bassa = diagonale
+
+  Tabella incrociata: xi target medio per bin di velocita' e di RMS a_z
+  RMS \ v [km/h]         14       25       37       57       89
+  -------------------------------------------------------------
+            7.38      0.216    0.248    0.329    0.324    0.350
+            0.94      0.145    0.153    0.185    0.270    0.319
+            0.36      0.085    0.090    0.094    0.119    0.135
+            0.21      0.083    0.083    0.089    0.091    0.096
+            0.11      0.082    0.082    0.083    0.084    0.087
+  ('--' = cella VUOTA: combinazione mai vista in addestramento; se le celle piene
+   stanno su una diagonale, velocita' e accelerazione NON sono separabili)
+
+================================================================================================
+ 4) INDICI DI SANITA' FISICA   [target = xi* ottimo]
+================================================================================================
+  [    ] quota di xi spiegata da a_z  = 0.881   (ora NON deve essere 0: se lo e', la rete ignora la strada)
+          variazione di xi lungo a_z  = 0.1052
+          variazione di xi lungo v    = 0.0142
+  [OK  ] errore closed-loop |xi - xi*| = 0.0223   (e' l'indicatore che conta ora)
+  [OK  ] escursione con la strada: rete 0.218 contro target 0.243  (90% del necessario)
+  [    ] frazione monotona in v       = 42.9%  (non piu' un requisito: la tenuta puo' chiedere di irrigidire)
+  [    ] distanza dal baseline √2     = 0.2164   (se ~0 la correzione appresa non sta facendo nulla)
+
+  Sensibilita' d(xi)/d(log10 RMS a_z), crossover r=√2 a 53 km/h:
+        sotto il crossover : +0.1139
+        sopra il crossover : +0.1076
+        (sopra r=√2 una sensibilita' POSITIVA e' un anello di retroazione
+         positivo, ma ora puo' essere legittimo: se xi* stesso sale con la
+         rugosita', l'anello e' voluto. Va giudicato contro xi*, non da solo.)
+
+  Figura diagnostica salvata: diagnostica_xi.png
+  Report testuale salvato:    diagnostica_report.txt
+    [ok] Figura salvata: risultati_sospensione.png
+    [ok] Figura efficienza salvata: efficienza_sospensione.png
+
+[3] Animazione: tutti i controllori sulla stessa strada demo...
+    (la strada demo e' severa — equivale a una classe E ISO 8608 — quindi xi DEVE muoversi parecchio)
+    Controllori simulati sulla stessa strada demo (8 s):
+                          xi  comfort Wk  gomma[mm]  margine
+      ML       0.118-0.420        1.88       4.55     0.98
+      ottimo   0.082-0.426        1.81       4.61     0.99
+      sqrt2    0.120-0.606        1.98       5.87     1.26
+      passivo  0.307 (fisso)        1.98       4.50     0.96
+      (margine > 1 = il vincolo di distacco ruota e' violato)
+    scarto medio |xi_ML - xi*| sulla demo: 0.025
+    [i] MP4 non salvato: manca ffmpeg. Per installarlo: brew install ffmpeg
+        (l'animazione a schermo funziona comunque) FileNotFoundError
+==========================================================================================
+Completato in 2572.0 s
+andreaalessandri@MacMini2020 / % 
+
+
+
+FINALE
+
+
+==========================================================================================
+ SOSPENSIONE 2 GDL (PEUGEOT 207) — CONTROLLO APPRESO (ML)
+ Legge di riferimento (etichette): OTTIMO VINCOLATO (comfort ISO 2631 sotto i limiti hardware)
+ omega_n = 9.41 rad/s (1.50 Hz)   |   crossover a r = √2 ≈ 1.414
+ Sistema: Darwin 24.6.0 / arm64 / Python 3.14.3 / codifica stampe utf-8
+==========================================================================================
+    HW: Apple Silicon GPU (MPS)
+    Core: 8 totali -> uso 4 performance (salto 4 efficiency)
+    Operatori verificati su mps (conv dilatate, batchnorm, riduzione depthwise, forward+backward)
+
+[1] Caricamento tracce e generazione etichette (parallela sui core)...
+  [ok] 3 tracce reali -> 2 train / 1 validazione (thessaloniki_19_11_2023.pkl)
+    [!] larisa_07_10_2023.pkl: cadenza reale 100.1 Hz (jitter 15.3%) contro cfg.freq_campion = 100 Hz
+        ricampionata su griglia uniforme: 271177 -> 271314 campioni. Senza questo, filtri e integrazioni lavorerebbero alla frequenza sbagliata.
+    [!] thessaloniki_01_10_2023.pkl: cadenza reale 100.1 Hz (jitter 13.5%) contro cfg.freq_campion = 100 Hz
+        ricampionata su griglia uniforme: 229148 -> 229200 campioni. Senza questo, filtri e integrazioni lavorerebbero alla frequenza sbagliata.
+    [!] thessaloniki_19_11_2023.pkl: cadenza reale 100.1 Hz (jitter 14.7%) contro cfg.freq_campion = 100 Hz
+        ricampionata su griglia uniforme: 252392 -> 252468 campioni. Senza questo, filtri e integrazioni lavorerebbero alla frequenza sbagliata.
+    Filtro ISO 2631-1 Wk verificato sulla Tabella 3 della norma: errore massimo 0.44%
+    Etichette da OTTIMIZZAZIONE VINCOLATA: si cerca la coppia (xi, kp) che
+    minimizza il comfort ISO 2631 Wk restando entro i limiti hardware.
+    Limiti dei vincoli — ognuno = limite di PICCO / fattore di picco:
+      GOMMA  picco  15.38 mm = (m_cassa+m_ruota)*g/k_gomma = (260+38)*9.807/190000   [deflessione statica: oltre, la ruota stacca]
+             fattore 3.30 (ripiego cfg)  ->  RMS ammesso 4.66 mm
+      CORSA  picco  80 mm = cfg.corsa_disponibile   [rattle space — VALORE NON VERIFICATO sulla 207]
+             fattore 3.30 (ripiego cfg)  ->  RMS ammesso 24.24 mm
+      FORZA  picco   1500 N  = cfg.forza_max   [saturazione attuatore, spec hardware]
+             fattore 3.30 (ripiego cfg)  ->  RMS ammesso 455 N
+      COMFORT scala 0.315 m/s^2 = cfg.xi_ott_comfort_rif   [soglia ISO 2631-1, non un limite: e' la scala dell'obiettivo]
+    Griglia 19x13 = 247 candidati, finestra 2 s, penalita' 1000
+    Data augmentation: 48 strade sintetiche ISO 8608 (buche/dossi bruschi, gradini, salite/discese)
+    Griglia fattoriale: 5 classi x 5 velocita' = 25 celle | training 21 celle | validazione 4 celle (DISGIUNTE)
+    Crossover r=√2 a v ≈ 53 km/h: le tracce a velocita' variabile lo attraversano a rugosita' costante
+      train  1: classe E (x1.09)  v   36-  42 km/h [costante]  RMS a_z= 5.13 m/s^2  ostacoli= 5  n_max=2.83 c/m
+      train  2: classe B (x1.10)  v   20-  97 km/h [rampa   ]  RMS a_z= 1.17 m/s^2  ostacoli=15  n_max=1.48 c/m
+      train  3: classe C (x0.77)  v   42- 100 km/h [urbano  ]  RMS a_z= 1.99 m/s^2  ostacoli= 7  n_max=1.43 c/m
+      train  4: classe C (x1.71)  v   19-  24 km/h [costante]  RMS a_z= 1.59 m/s^2  ostacoli= 9  n_max=2.83 c/m
+      train  5: classe E (x1.86)  v   73-  79 km/h [costante]  RMS a_z= 9.20 m/s^2  ostacoli=21  n_max=1.83 c/m
+      train  6: classe B (x1.29)  v   19-  24 km/h [costante]  RMS a_z= 0.71 m/s^2  ostacoli= 3  n_max=2.83 c/m
+      train  7: classe A (x1.65)  v   19-  78 km/h [rampa   ]  RMS a_z= 0.82 m/s^2  ostacoli= 5  n_max=1.86 c/m
+      train  8: classe E (x1.08)  v   95- 100 km/h [costante]  RMS a_z= 8.23 m/s^2  ostacoli=20  n_max=1.44 c/m
+      train  9: classe B (x0.78)  v   42-  99 km/h [urbano  ]  RMS a_z= 1.56 m/s^2  ostacoli=15  n_max=1.45 c/m
+      train 10: classe A (x1.17)  v   30-  75 km/h [urbano  ]  RMS a_z= 0.72 m/s^2  ostacoli=10  n_max=1.91 c/m
+      train 11: classe D (x1.27)  v   24-  58 km/h [rampa   ]  RMS a_z= 3.53 m/s^2  ostacoli=14  n_max=2.47 c/m
+      train 12: classe A (x1.71)  v   11-  78 km/h [sweep   ]  RMS a_z= 0.54 m/s^2  ostacoli= 2  n_max=1.85 c/m
+      train 13: classe D (x1.35)  v   37-  89 km/h [rampa   ]  RMS a_z= 4.13 m/s^2  ostacoli=16  n_max=1.63 c/m
+      train 14: classe C (x0.99)  v   11-  87 km/h [sweep   ]  RMS a_z= 2.09 m/s^2  ostacoli=12  n_max=1.66 c/m
+      train 15: classe D (x1.77)  v   11-  75 km/h [sweep   ]  RMS a_z= 4.38 m/s^2  ostacoli=30  n_max=1.91 c/m
+      train 16: classe C (x1.91)  v   54-  60 km/h [costante]  RMS a_z= 2.60 m/s^2  ostacoli= 7  n_max=2.40 c/m
+      train 17: classe E (x0.68)  v   32-  75 km/h [urbano  ]  RMS a_z= 4.91 m/s^2  ostacoli= 9  n_max=1.91 c/m
+      train 18: classe B (x1.88)  v   30-  75 km/h [urbano  ]  RMS a_z= 1.65 m/s^2  ostacoli=12  n_max=1.92 c/m
+      train 19: classe B (x1.69)  v   21-  52 km/h [urbano  ]  RMS a_z= 1.09 m/s^2  ostacoli= 4  n_max=2.78 c/m
+      train 20: classe A (x0.97)  v   46- 108 km/h [sweep   ]  RMS a_z= 0.61 m/s^2  ostacoli= 5  n_max=1.34 c/m
+      train 21: classe D (x1.85)  v   73-  79 km/h [costante]  RMS a_z= 5.49 m/s^2  ostacoli=28  n_max=1.82 c/m
+      train 22: classe E (x1.25)  v   36-  42 km/h [costante]  RMS a_z= 5.49 m/s^2  ostacoli=10  n_max=2.83 c/m
+      train 23: classe B (x1.63)  v   95- 101 km/h [costante]  RMS a_z= 2.27 m/s^2  ostacoli=22  n_max=1.43 c/m
+      train 24: classe C (x1.32)  v   73-  79 km/h [costante]  RMS a_z= 2.57 m/s^2  ostacoli= 7  n_max=1.82 c/m
+      train 25: classe C (x1.33)  v   21-  93 km/h [rampa   ]  RMS a_z= 1.93 m/s^2  ostacoli=10  n_max=1.55 c/m
+      train 26: classe E (x1.01)  v   41-  92 km/h [sweep   ]  RMS a_z= 6.42 m/s^2  ostacoli=13  n_max=1.57 c/m
+      train 27: classe B (x1.78)  v   20-  25 km/h [costante]  RMS a_z= 1.22 m/s^2  ostacoli= 8  n_max=2.83 c/m
+      train 28: classe A (x1.37)  v   73-  79 km/h [costante]  RMS a_z= 1.24 m/s^2  ostacoli=11  n_max=1.82 c/m
+      train 29: classe E (x1.88)  v   94-  99 km/h [costante]  RMS a_z=10.82 m/s^2  ostacoli=30  n_max=1.45 c/m
+      train 30: classe B (x1.49)  v   30-  77 km/h [rampa   ]  RMS a_z= 1.69 m/s^2  ostacoli=14  n_max=1.88 c/m
+      train 31: classe A (x1.81)  v   55-  61 km/h [costante]  RMS a_z= 1.15 m/s^2  ostacoli=14  n_max=2.36 c/m
+      train 32: classe D (x1.41)  v   32-  74 km/h [urbano  ]  RMS a_z= 3.94 m/s^2  ostacoli=15  n_max=1.95 c/m
+      train 33: classe A (x0.87)  v   18-  25 km/h [costante]  RMS a_z= 0.33 m/s^2  ostacoli= 1  n_max=2.83 c/m
+      train 34: classe D (x0.98)  v   37-  42 km/h [costante]  RMS a_z= 2.71 m/s^2  ostacoli= 6  n_max=2.83 c/m
+      train 35: classe C (x1.67)  v   22-  53 km/h [urbano  ]  RMS a_z= 1.81 m/s^2  ostacoli= 3  n_max=2.70 c/m
+      train 36: classe D (x1.03)  v   19-  25 km/h [costante]  RMS a_z= 2.14 m/s^2  ostacoli= 4  n_max=2.83 c/m
+      train 37: classe C (x1.07)  v   55-  61 km/h [costante]  RMS a_z= 2.03 m/s^2  ostacoli=10  n_max=2.37 c/m
+      train 38: classe E (x1.49)  v   27-  84 km/h [sweep   ]  RMS a_z= 7.21 m/s^2  ostacoli=19  n_max=1.71 c/m
+      train 39: classe B (x0.81)  v   21-  91 km/h [sweep   ]  RMS a_z= 1.52 m/s^2  ostacoli=16  n_max=1.58 c/m
+      train 40: classe B (x0.63)  v   38-  85 km/h [rampa   ]  RMS a_z= 1.26 m/s^2  ostacoli=12  n_max=1.69 c/m
+      train 41: classe A (x1.73)  v   19-  99 km/h [rampa   ]  RMS a_z= 0.72 m/s^2  ostacoli=10  n_max=1.46 c/m
+      train 42: classe D (x0.63)  v   73-  78 km/h [costante]  RMS a_z= 3.15 m/s^2  ostacoli=10  n_max=1.84 c/m
+      train 43: classe E (x1.04)  v   11-  81 km/h [sweep   ]  RMS a_z= 5.65 m/s^2  ostacoli=16  n_max=1.77 c/m
+      train 44: classe B (x1.59)  v   95- 101 km/h [costante]  RMS a_z= 1.77 m/s^2  ostacoli=10  n_max=1.43 c/m
+      train 45: classe C (x1.08)  v   73-  79 km/h [costante]  RMS a_z= 2.88 m/s^2  ostacoli=22  n_max=1.82 c/m
+      train 46: classe C (x1.05)  v   18-  25 km/h [costante]  RMS a_z= 0.87 m/s^2  ostacoli= 0  n_max=2.83 c/m
+      train 47: classe E (x0.72)  v   73-  78 km/h [costante]  RMS a_z= 6.13 m/s^2  ostacoli=14  n_max=1.84 c/m
+      train 48: classe B (x1.34)  v   19-  24 km/h [costante]  RMS a_z= 1.07 m/s^2  ostacoli= 9  n_max=2.83 c/m
+      valid  1: classe C (x0.62)  v   20-  98 km/h [rampa   ]  RMS a_z= 1.81 m/s^2  ostacoli=18  n_max=1.48 c/m
+      valid  2: classe E (x0.62)  v   19-  24 km/h [costante]  RMS a_z= 2.92 m/s^2  ostacoli= 3  n_max=2.83 c/m
+      valid  3: classe A (x1.44)  v   11-  86 km/h [sweep   ]  RMS a_z= 0.46 m/s^2  ostacoli= 3  n_max=1.68 c/m
+      valid  4: classe D (x1.08)  v   53- 119 km/h [urbano  ]  RMS a_z= 4.59 m/s^2  ostacoli=21  n_max=1.21 c/m
+    Campioni TRAIN      : 566864  (50 tracce = reali + sintetiche)
+    Etichetta FORZA     : |F*| max 1500 N su un limite di 1500 N  |  satura nel 0.16% dei campioni
+    Campioni VALID reale: 157458  (3a traccia registrata, mai vista)
+    Campioni VALID sint.: 17200  (4 strade su celle classe x velocita' DISGIUNTE dal training)
+    Normalizzazione (dai dati di training): Normalizzatore(a_z: media=+0.0009 std=2.1060 | v: media=12.037 std=6.986)
+    Salvata in normalizzatore.json
+
+[2] Addestramento di DUE reti separate (Loss() e Optimizer indipendenti)...
+    Scarto etichette dal baseline 'comfort' [logit]: mediana 1.82 | p90 3.32 | p99 4.05 | max 8.77
+    -> alpha suggerito (max scarto +10%) = 9.65   |   alpha finale in config = 7.00
+    [!] alpha finale TROPPO PICCOLO: la correzione satura e la rete non puo' raggiungere xi*. Alzo a 9.65.
+    Rete xi = sigmoid(L(v) + alpha*Delta(a_z,v)) con alpha da 0.30 a 9.65 (curriculum)
+    Regolarizzazione: rete xi lr=2e-05 wd=3e-04  |  rete forza lr=4e-05 wd=2e-05
+    loss forza: Huber con delta = 0.1720 (= 2 x 1.4826 x MAD = 2 x 0.0860)  |  curtosi in eccesso del target 8.4  |  14.9% dei campioni nel ramo lineare
+    loss xi: MSE pesata per strato (target senza code, ma con una massa al minimo del damper: serve il peso, non la robustezza)
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 0.3000
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.884697 max=0.999999 mean=0.998384
+beta*Delta Intoccato      min=0.265409 max=0.300000 mean=0.299515
+Delta Clampato [-1,1]     min=0.884697 max=0.999999 mean=0.998384
+beta*Delta Clampato       min=0.265409 max=0.300000 mean=0.299515
+L(v) + beta*Delta         min=-3.210690 max=-3.176099 mean=-3.176584
+L(v) + beta*Delta Clampato min=-3.210690 max=-3.176099 mean=-3.176584
+    Epoca 01/12  (alpha=0.30)  |  RETE xi: Loss(Train)=0.10776  Loss(Valid)=0.02829  |  RETE F: Loss(Train)=0.00287  Loss(Valid)=0.00180
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 1.6352
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.902943 max=0.999982 mean=0.996467
+beta*Delta Intoccato      min=1.476485 max=1.635163 mean=1.629414
+Delta Clampato [-1,1]     min=0.902943 max=0.999982 mean=0.996467
+beta*Delta Clampato       min=1.476485 max=1.635163 mean=1.629414
+L(v) + beta*Delta         min=-1.999614 max=-1.840936 mean=-1.846684
+L(v) + beta*Delta Clampato min=-1.999614 max=-1.840936 mean=-1.846684
+
+DEBUG EPOCA 3
+Coefficiente Alpha (beta buffer) = 2.9704
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.343564 max=0.991196 mean=0.787842
+beta*Delta Intoccato      min=1.020517 max=2.944231 mean=2.340193
+Delta Clampato [-1,1]     min=0.343564 max=0.991196 mean=0.787842
+beta*Delta Clampato       min=1.020517 max=2.944231 mean=2.340193
+L(v) + beta*Delta         min=-2.455582 max=-0.531868 mean=-1.135906
+L(v) + beta*Delta Clampato min=-2.455582 max=-0.531868 mean=-1.135906
+    Epoca 03/12  (alpha=2.97)  |  RETE xi: Loss(Train)=0.02192  Loss(Valid)=0.01216  |  RETE F: Loss(Train)=0.00155  Loss(Valid)=0.00183
+
+DEBUG EPOCA 4
+Coefficiente Alpha (beta buffer) = 4.3056
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.097822 max=0.782951 mean=0.445305
+beta*Delta Intoccato      min=0.421180 max=3.371055 mean=1.917296
+Delta Clampato [-1,1]     min=0.097822 max=0.782951 mean=0.445305
+beta*Delta Clampato       min=0.421180 max=3.371055 mean=1.917296
+L(v) + beta*Delta         min=-3.054919 max=-0.105043 mean=-1.558803
+L(v) + beta*Delta Clampato min=-3.054919 max=-0.105043 mean=-1.558803
+
+DEBUG EPOCA 5
+Coefficiente Alpha (beta buffer) = 5.6408
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.043210 max=0.561504 mean=0.318009
+beta*Delta Intoccato      min=0.243739 max=3.167311 mean=1.793813
+Delta Clampato [-1,1]     min=0.043210 max=0.561504 mean=0.318009
+beta*Delta Clampato       min=0.243739 max=3.167311 mean=1.793813
+L(v) + beta*Delta         min=-3.232360 max=-0.308788 mean=-1.682286
+L(v) + beta*Delta Clampato min=-3.232360 max=-0.308788 mean=-1.682286
+
+DEBUG EPOCA 6
+Coefficiente Alpha (beta buffer) = 6.9760
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.001120 max=0.447362 mean=0.244070
+beta*Delta Intoccato      min=0.007816 max=3.120780 mean=1.702621
+Delta Clampato [-1,1]     min=0.001120 max=0.447362 mean=0.244070
+beta*Delta Clampato       min=0.007816 max=3.120780 mean=1.702621
+L(v) + beta*Delta         min=-3.468283 max=-0.355318 mean=-1.773478
+L(v) + beta*Delta Clampato min=-3.468283 max=-0.355318 mean=-1.773478
+    Epoca 06/12  (alpha=6.98)  |  RETE xi: Loss(Train)=0.00623  Loss(Valid)=0.01151  |  RETE F: Loss(Train)=0.00129  Loss(Valid)=0.00185
+
+DEBUG EPOCA 7
+Coefficiente Alpha (beta buffer) = 8.3112
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.066985 max=0.381629 mean=0.185477
+beta*Delta Intoccato      min=-0.556719 max=3.171776 mean=1.541524
+Delta Clampato [-1,1]     min=-0.066985 max=0.381629 mean=0.185477
+beta*Delta Clampato       min=-0.556719 max=3.171776 mean=1.541524
+L(v) + beta*Delta         min=-4.032818 max=-0.304323 mean=-1.934575
+L(v) + beta*Delta Clampato min=-4.032818 max=-0.304323 mean=-1.934575
+
+DEBUG EPOCA 8
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.047099 max=0.296102 mean=0.153120
+beta*Delta Intoccato      min=-0.454333 max=2.856302 mean=1.477048
+Delta Clampato [-1,1]     min=-0.047099 max=0.296102 mean=0.153120
+beta*Delta Clampato       min=-0.454333 max=2.856302 mean=1.477048
+L(v) + beta*Delta         min=-3.930431 max=-0.619797 mean=-1.999050
+L(v) + beta*Delta Clampato min=-3.930431 max=-0.619797 mean=-1.999050
+
+DEBUG EPOCA 9
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.077039 max=0.298796 mean=0.154456
+beta*Delta Intoccato      min=-0.743149 max=2.882290 mean=1.489935
+Delta Clampato [-1,1]     min=-0.077039 max=0.298796 mean=0.154456
+beta*Delta Clampato       min=-0.743149 max=2.882290 mean=1.489935
+L(v) + beta*Delta         min=-4.219248 max=-0.593808 mean=-1.986163
+L(v) + beta*Delta Clampato min=-4.219248 max=-0.593808 mean=-1.986163
+    Epoca 09/12  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00504  Loss(Valid)=0.01179  |  RETE F: Loss(Train)=0.00114  Loss(Valid)=0.00188
+
+DEBUG EPOCA 10
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.084454 max=0.298025 mean=0.135713
+beta*Delta Intoccato      min=-0.814673 max=2.874856 mean=1.309139
+Delta Clampato [-1,1]     min=-0.084454 max=0.298025 mean=0.135713
+beta*Delta Clampato       min=-0.814673 max=2.874856 mean=1.309139
+L(v) + beta*Delta         min=-4.290771 max=-0.601243 mean=-2.166960
+L(v) + beta*Delta Clampato min=-4.290771 max=-0.601243 mean=-2.166960
+
+DEBUG EPOCA 11
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.114770 max=0.285156 mean=0.131110
+beta*Delta Intoccato      min=-1.107107 max=2.750711 mean=1.264734
+Delta Clampato [-1,1]     min=-0.114770 max=0.285156 mean=0.131110
+beta*Delta Clampato       min=-1.107107 max=2.750711 mean=1.264734
+L(v) + beta*Delta         min=-4.583206 max=-0.725388 mean=-2.211365
+L(v) + beta*Delta Clampato min=-4.583206 max=-0.725388 mean=-2.211365
+
+DEBUG EPOCA 12
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=-0.079079 max=0.275273 mean=0.128943
+beta*Delta Intoccato      min=-0.762827 max=2.655375 mean=1.243824
+Delta Clampato [-1,1]     min=-0.079079 max=0.275273 mean=0.128943
+beta*Delta Clampato       min=-0.762827 max=2.655375 mean=1.243824
+L(v) + beta*Delta         min=-4.238926 max=-0.820724 mean=-2.232274
+L(v) + beta*Delta Clampato min=-4.238926 max=-0.820724 mean=-2.232274
+    Epoca 12/12  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00443  Loss(Valid)=0.01228  |  RETE F: Loss(Train)=0.00104  Loss(Valid)=0.00199
+    Rollout su 48 strade sintetiche NUOVE (seme 1234+4441, celle identiche al training) + 2 registrate
+
+[2b] DAgger: allineamento fra dati di addestramento e stati visitati
+    Preparate 50 strade per l'aggregazione (20 s ciascuna), di cui 48 con strada VERA nota; etichette dell'esperto calcolate una volta
+    Validazione ricalibrata su rollout closed-loop di 4 strade di validazione (la vecchia era sulla distribuzione passiva)
+    giro 1/5  beta=1.00  |  RMS a_z visitata 3.623 contro 2.106 nel dataset  |  |xi_applicato - xi*| = 0.0000  |  campioni 566864 -> 653945
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.117260 max=0.378199 mean=0.217696
+beta*Delta Intoccato      min=1.131131 max=3.648237 mean=2.099968
+Delta Clampato [-1,1]     min=0.117260 max=0.378199 mean=0.217696
+beta*Delta Clampato       min=1.131131 max=3.648237 mean=2.099968
+L(v) + beta*Delta         min=-2.344968 max=0.172138 mean=-1.376131
+L(v) + beta*Delta Clampato min=-2.344968 max=0.172138 mean=-1.376131
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00897  Loss(Valid)=0.00722  |  RETE F: Loss(Train)=0.00188  Loss(Valid)=0.00200
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.111004 max=0.324080 mean=0.211645
+beta*Delta Intoccato      min=1.070786 max=3.126185 mean=2.041605
+Delta Clampato [-1,1]     min=0.111004 max=0.324080 mean=0.211645
+beta*Delta Clampato       min=1.070786 max=3.126185 mean=2.041605
+L(v) + beta*Delta         min=-2.405313 max=-0.349914 mean=-1.434494
+L(v) + beta*Delta Clampato min=-2.405313 max=-0.349914 mean=-1.434494
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00679  Loss(Valid)=0.00695  |  RETE F: Loss(Train)=0.00166  Loss(Valid)=0.00215
+    giro 2/5  beta=0.40  |  RMS a_z visitata 3.609 contro 2.379 nel dataset  |  |xi_applicato - xi*| = 0.0241  |  campioni 566864 -> 741026
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.122439 max=0.358772 mean=0.230234
+beta*Delta Intoccato      min=1.181091 max=3.460841 mean=2.220915
+Delta Clampato [-1,1]     min=0.122439 max=0.358772 mean=0.230234
+beta*Delta Clampato       min=1.181091 max=3.460841 mean=2.220915
+L(v) + beta*Delta         min=-2.295008 max=-0.015258 mean=-1.255184
+L(v) + beta*Delta Clampato min=-2.295008 max=-0.015258 mean=-1.255184
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00621  Loss(Valid)=0.00691  |  RETE F: Loss(Train)=0.00164  Loss(Valid)=0.00201
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.097077 max=0.343610 mean=0.225021
+beta*Delta Intoccato      min=0.936442 max=3.314576 mean=2.170627
+Delta Clampato [-1,1]     min=0.097077 max=0.343610 mean=0.225021
+beta*Delta Clampato       min=0.936442 max=3.314576 mean=2.170627
+L(v) + beta*Delta         min=-2.539657 max=-0.161522 mean=-1.305472
+L(v) + beta*Delta Clampato min=-2.539657 max=-0.161522 mean=-1.305472
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00559  Loss(Valid)=0.00629  |  RETE F: Loss(Train)=0.00153  Loss(Valid)=0.00198
+    giro 3/5  beta=0.16  |  RMS a_z visitata 3.580 contro 2.568 nel dataset  |  |xi_applicato - xi*| = 0.0263  |  campioni 566864 -> 828107
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.102872 max=0.369230 mean=0.241543
+beta*Delta Intoccato      min=0.992338 max=3.561723 mean=2.330006
+Delta Clampato [-1,1]     min=0.102872 max=0.369230 mean=0.241543
+beta*Delta Clampato       min=0.992338 max=3.561723 mean=2.330006
+L(v) + beta*Delta         min=-2.483761 max=0.085624 mean=-1.146093
+L(v) + beta*Delta Clampato min=-2.483761 max=0.085624 mean=-1.146093
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00515  Loss(Valid)=0.00633  |  RETE F: Loss(Train)=0.00150  Loss(Valid)=0.00229
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.115652 max=0.336789 mean=0.234949
+beta*Delta Intoccato      min=1.115620 max=3.248784 mean=2.266400
+Delta Clampato [-1,1]     min=0.115652 max=0.336789 mean=0.234949
+beta*Delta Clampato       min=1.115620 max=3.248784 mean=2.266400
+L(v) + beta*Delta         min=-2.360478 max=-0.227315 mean=-1.209699
+L(v) + beta*Delta Clampato min=-2.360478 max=-0.227315 mean=-1.209699
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00479  Loss(Valid)=0.00735  |  RETE F: Loss(Train)=0.00141  Loss(Valid)=0.00228
+    giro 4/5  beta=0.06  |  RMS a_z visitata 3.557 contro 2.702 nel dataset  |  |xi_applicato - xi*| = 0.0265  |  campioni 566864 -> 915188
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.142281 max=0.390424 mean=0.253256
+beta*Delta Intoccato      min=1.372494 max=3.766160 mean=2.442993
+Delta Clampato [-1,1]     min=0.142281 max=0.390424 mean=0.253256
+beta*Delta Clampato       min=1.372494 max=3.766160 mean=2.442993
+L(v) + beta*Delta         min=-2.103605 max=0.290061 mean=-1.033106
+L(v) + beta*Delta Clampato min=-2.103605 max=0.290061 mean=-1.033106
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00441  Loss(Valid)=0.00760  |  RETE F: Loss(Train)=0.00137  Loss(Valid)=0.00246
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.168243 max=0.397958 mean=0.259578
+beta*Delta Intoccato      min=1.622931 max=3.838836 mean=2.503974
+Delta Clampato [-1,1]     min=0.168243 max=0.397958 mean=0.259578
+beta*Delta Clampato       min=1.622931 max=3.838836 mean=2.503974
+L(v) + beta*Delta         min=-1.853168 max=0.362737 mean=-0.972125
+L(v) + beta*Delta Clampato min=-1.853168 max=0.362737 mean=-0.972125
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00413  Loss(Valid)=0.00774  |  RETE F: Loss(Train)=0.00130  Loss(Valid)=0.00275
+    giro 5/5  beta=0.03  |  RMS a_z visitata 3.558 contro 2.804 nel dataset  |  |xi_applicato - xi*| = 0.0254  |  campioni 566864 -> 1002269
+
+DEBUG EPOCA 1
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.167772 max=0.387572 mean=0.261104
+beta*Delta Intoccato      min=1.618385 max=3.738648 mean=2.518704
+Delta Clampato [-1,1]     min=0.167772 max=0.387572 mean=0.261104
+beta*Delta Clampato       min=1.618385 max=3.738648 mean=2.518704
+L(v) + beta*Delta         min=-1.857714 max=0.262549 mean=-0.957395
+L(v) + beta*Delta Clampato min=-1.857714 max=0.262549 mean=-0.957395
+      Epoca 01/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00384  Loss(Valid)=0.00767  |  RETE F: Loss(Train)=0.00126  Loss(Valid)=0.00237
+
+DEBUG EPOCA 2
+Coefficiente Alpha (beta buffer) = 9.6463
+L(v)                      min=-3.476099 max=-3.476099 mean=-3.476099
+Delta Intoccato           min=0.178906 max=0.421968 mean=0.261890
+beta*Delta Intoccato      min=1.725785 max=4.070449 mean=2.526282
+Delta Clampato [-1,1]     min=0.178906 max=0.421968 mean=0.261890
+beta*Delta Clampato       min=1.725785 max=4.070449 mean=2.526282
+L(v) + beta*Delta         min=-1.750314 max=0.594350 mean=-0.949816
+L(v) + beta*Delta Clampato min=-1.750314 max=0.594350 mean=-0.949816
+      Epoca 02/2  (alpha=9.65)  |  RETE xi: Loss(Train)=0.00363  Loss(Valid)=0.00820  |  RETE F: Loss(Train)=0.00120  Loss(Valid)=0.00218
+
+==========================================================================================
+ VALIDAZIONE — confronto fra valori APPRESI e valori CALCOLATI, su dati mai visti
+==========================================================================================
+ xi predetto / F predetta : APPRESO dalle reti (solo a_z passata + v)
+ xi* / F* di riferimento  : CALCOLATO per ottimizzazione (conosce la strada e lo stato vero)
+
+ [A] REGISTRATA: thessaloniki_19_11_2023.pkl  |  2525 s  |  v 0-55 km/h  |  RMS a_z 0.32 m/s^2  |  rugosita' equivalente classe ISO B
+   xi(t)    -> R^2: +0.4146 | RMSE: 0.0691 | MAE: 0.0318 | dev.std target: 0.0904
+   forza(t) -> R^2: +0.7595 | RMSE: 91.7 N | MAE: 59.2 N
+   picchi   -> |F| max: target 1422 N, ML 976 N (-31%) | margine ML sul limite 35%
+                saturazione a ±1500 N: target 0.00%, ML 0.00% | sui picchi (|F*|>50% del max) il ML sta -369 N
+
+ [B] SINTETICHE, celle classe x velocita' DISGIUNTE dal training
+     valid  1 ISO C(x0.62) 20-98 km/h [rampa]; valid  2 ISO E(x0.62) 19-24 km/h [costante]; valid  3 ISO A(x1.44) 11-86 km/h [sweep]; valid  4 ISO D(x1.08) 53-119 km/h [urbano]
+   xi(t)    -> R^2: +0.8867 | RMSE: 0.0416 | MAE: 0.0288 | dev.std target: 0.1234
+   forza(t) -> R^2: +0.8003 | RMSE: 108.4 N | MAE: 61.6 N
+   picchi   -> |F| max: target 1500 N, ML 1500 N (+0%) | margine ML sul limite 0%
+                saturazione a ±1500 N: target 0.47%, ML 0.10% | sui picchi (|F*|>50% del max) il ML sta -375 N
+     ^ [B] e' il test severo: rugosita' x velocita' mai viste insieme.
+
+ |forza| max prevista dal ML: 975.9 N  (limite 1500 N, margine 35%)
+
+ COMFORT in CLOSED-LOOP — RMS accelerazione cassa
+   dati: thessaloniki_19_11_2023.pkl, primi 60 s  (v 0-15 km/h, rugosita' equivalente classe ISO B)
+   passiva  0.166 m/s^2
+   ML       0.041 m/s^2   (+75.2% vs passiva)
+   ottimo   0.038 m/s^2   (+76.9% vs passiva)  <- il tetto raggiungibile con le etichette
+
+--------------------------------------------------------------------------
+ ETICHETTE OTTIME: xi* in funzione della RUGOSITA' (RMS a_z) e della velocita'   [strade sintetiche]
+--------------------------------------------------------------------------
+RMS a_z        | v [km/h]  | xi* medio  | |forza| [N]
+0.12-0.67      | 41.4      | 0.114      | 132
+0.67-2.15      | 51.2      | 0.325      | 96
+2.15-3.11      | 38.7      | 0.337      | 176
+3.11-7.95      | 80.3      | 0.323      | 164
+ TENUTA DI STRADA su thessaloniki_19_11_2023.pkl (60 s) — RMS deflessione pneumatico: passiva 0.24 mm -> ML 0.08 mm   (limite ammesso 4.66 mm)
+
+ BILANCIO ENERGETICO — integrali su 60 s di thessaloniki_19_11_2023.pkl
+   IPOTESI  damper    : damper IDRAULICO: il suo calore NON e' recuperabile ed e' escluso dal recupero
+   IPOTESI  attuatore : attuatore ideale in trazione (eta_attuatore = 100%): il costo e' un LIMITE INFERIORE
+   CONVENZIONE: le voci misurate sono MODULI (>=0), il verso e' nel nome. Il bilancio ha segno
+   dal punto di vista della BATTERIA: <0 esce, >0 rientra. I joule scalano con la durata: non sono una potenza.
+   MECCANICA  damper dissipato in calore nell'olio — PERSO, fuori bilancio :     3.9 J
+   MECCANICA  attuatore, lavoro fatto sul veicolo (spinge)                :     7.5 J
+   MECCANICA  attuatore, lavoro ricevuto dal veicolo (frena)              :    12.2 J
+   ELETTRICO  ADDEBITO  = lavoro in spinta / eta_attuatore                :    -7.5 J   (esce dalla batteria)
+   ELETTRICO  ACCREDITO = eta*(ATTUATORE assorbita)                      :    +7.3 J   (rientra in batteria)
+   ELETTRICO  NETTO     = accredito - addebito                            :    -0.2 J  -> COSTO NETTO (esce dalla batteria piu' di quanto rientra)
+   [sensibilita'] con le perdite di trazione al 60% come il generatore, il netto sarebbe -5.2 J
+   [sensibilita'] con un damper ELETTROMAGNETICO al posto dell'idraulico il netto sarebbe +2.1 J
+################################################################################################
+#  DIAGNOSTICA FISICA — xi deve seguire xi* ottimo: dipende dalla RUGOSITA' (da a_z) e dalla velocita'
+#  2026-08-01 02:15   |   vincolo strutturale: ATTIVO alpha=9.65   |   metodo_freq: velocita
+################################################################################################
+
+================================================================================================
+ 1) MAPPA xi(v, RMS a_z) — OPEN LOOP
+================================================================================================
+ DATI      : banca di finestre di a_z generate col modello PASSIVO su profili ISO
+             8608 classi B,C,D,E a 29/58/86 km/h, poi RISCALATE al livello di RMS
+             indicato in riga. La FORMA spettrale resta realistica, cambia solo
+             l'ampiezza: e' un esperimento controllato, una variabile per volta.
+ xi        : APPRESO dalla rete (uscita, non etichetta). Media su tutte le finestre.
+ NB        : e' OPEN LOOP — a_z e' imposta dall'esterno, non prodotta dal controllo.
+             Per il comportamento reale vedi la mappa closed-loop al punto 2.
+    Righe = livello di a_z, colonne = velocita'. Quindi:
+      lungo una RIGA (a_z fissa, v che cresce) xi deve SCENDERE da xi_max a xi_min;
+      lungo una COLONNA (v fissa, a_z che cresce) xi deve restare QUASI COSTANTE.
+
+  RMS a_z \ v [km/h]      14     22     29     36     43     50     58     65     72     79     86     94    101    108
+  ---------------------------------------------------------------------------------------------------------------------
+     6.00 m/s^2        0.331  0.334  0.338  0.344  0.350  0.356  0.361  0.364  0.365  0.364  0.361  0.357  0.352  0.346
+     3.88 m/s^2        0.322  0.325  0.330  0.335  0.342  0.348  0.353  0.356  0.357  0.356  0.353  0.349  0.344  0.338
+     2.51 m/s^2        0.316  0.319  0.324  0.331  0.337  0.343  0.349  0.352  0.353  0.352  0.350  0.345  0.340  0.334
+     1.63 m/s^2        0.297  0.302  0.309  0.317  0.325  0.333  0.340  0.344  0.345  0.345  0.342  0.337  0.331  0.325
+     1.05 m/s^2        0.245  0.256  0.269  0.283  0.297  0.309  0.319  0.325  0.328  0.327  0.324  0.317  0.310  0.301
+     0.68 m/s^2        0.156  0.170  0.187  0.206  0.224  0.242  0.256  0.266  0.270  0.269  0.264  0.256  0.246  0.235
+     0.44 m/s^2        0.104  0.111  0.121  0.132  0.144  0.156  0.167  0.175  0.178  0.177  0.173  0.167  0.159  0.151
+     0.29 m/s^2        0.086  0.088  0.091  0.094  0.098  0.103  0.107  0.110  0.111  0.111  0.109  0.107  0.104  0.101
+     0.18 m/s^2        0.083  0.084  0.085  0.086  0.088  0.089  0.091  0.092  0.093  0.093  0.092  0.091  0.090  0.089
+     0.12 m/s^2        0.083  0.083  0.084  0.084  0.085  0.086  0.087  0.088  0.088  0.088  0.088  0.087  0.086  0.086
+     0.08 m/s^2        0.082  0.083  0.083  0.084  0.084  0.085  0.086  0.087  0.087  0.087  0.087  0.086  0.085  0.085
+     0.05 m/s^2        0.082  0.083  0.083  0.084  0.084  0.085  0.086  0.086  0.086  0.086  0.086  0.086  0.085  0.085
+  ---------------------------------------------------------------------------------------------------------------------
+  BASELINE √2 (solo v)   0.683  0.662  0.629  0.580  0.514  0.434  0.349  0.270  0.207  0.162  0.131  0.111  0.099  0.092
+  [range damper: xi_min=0.082  xi_max=0.716]
+
+================================================================================================
+ 2) xi MEDIO IN CLOSED-LOOP su strade ISO 8608 (anello di retroazione CHIUSO)
+================================================================================================
+ DATI      : 5 profili ISO 8608 (classi A, B, C, D, E) x 5 velocita' costanti, 12 s ciascuno,
+             generati come le strade di TRAINING (ostacoli, pendenze, spettro ISO).
+             Ogni cella e' la MEDIA di 5 realizzazioni con semi diversi:
+             con una sola strada per cella si legge il sorteggio degli ostacoli.
+             Scartato il 20% iniziale (warm-up: la finestra parte piena di zeri).
+ xi rete   : APPRESO — la rete legge la propria a_z controllata e comanda.
+ xi* target: CALCOLATO su QUELLA strada per ottimizzazione vincolata (conosce z_r).
+  classe \ v [km/h]         22       40       58       76       97
+  ----------------------------------------------------------------
+  A (liscia)           0.084    0.111    0.128    0.181    0.179
+  B                    0.093    0.136    0.250    0.292    0.276
+  C                    0.161    0.270    0.344    0.343    0.310
+  D                    0.313    0.328    0.340    0.334    0.330
+  E (sconnessa)        0.332    0.343    0.357    0.356    0.355
+  ----------------------------------------------------------------
+
+  TARGET xi* per classe (l'ottimo su QUELLA strada: cambia riga per riga):
+    A:    0.082   0.100   0.093   0.136   0.158
+    B:    0.083   0.123   0.248   0.197   0.256
+    C:    0.101   0.227   0.303   0.332   0.325
+    D:    0.214   0.325   0.341   0.335   0.349
+    E:    0.346   0.349   0.365   0.360   0.370
+  baseline √2 (solo v):    0.662   0.549   0.349   0.182   0.105
+
+  RMS a_z closed-loop [m/s^2] (per capire quanto e' fuori distribuzione):
+    A:     0.19    0.32    0.37    0.62    0.82
+    B:     0.25    0.58    1.16    1.08    1.66
+    C:     0.60    1.76    1.58    2.09    3.09
+    D:     1.80    2.61    3.15    4.02    4.43
+    E:     3.44    4.85    6.19    7.09    8.02
+
+  Errore medio  |xi_rete - xi*| = 0.024
+  Errore MASSIMO                = 0.099 (classe D, 22 km/h: xi=0.313 contro xi*=0.214)
+
+  RUMORE DEL TARGET (da 5 realizzazioni della stessa cella):
+    scarto tipo fra realizzazioni     : 0.035   (max 0.123)
+    incertezza sulla MEDIA riportata  : 0.016   <- barra d'errore delle celle qui sopra
+    celle con errore oltre 2 barre    : 9 su 25   (le altre sono compatibili col rumore)
+    bias medio con segno              : +0.017   (rete piu RIGIDA del target)
+
+  Escursione di xi* fra classe A ed E, a parita' di velocita' : 0.244
+  Escursione prodotta dalla RETE                              : 0.212
+  (se la prima e' grande e la seconda ~0, la rete sta ignorando la strada;
+   se la prima e' ~0, e' il TARGET a non dipendere dalla strada)
+
+================================================================================================
+ 3) DISTRIBUZIONE DATASET (TRAINING) — dove vivono i campioni nel piano (v, a_z)
+================================================================================================
+ DATI      : 50 tracce di TRAINING (2 reali registrate + 48 sintetiche ISO 8608), finestre da 2 s
+ xi        : ETICHETTA calcolata (target), non uscita della rete
+  campioni analizzati: 150000 (sottocampionati da 566864)
+  v     [km/h] : min    7.2  mediana   37.7  max  107.7
+  RMS a_z      : min  0.053  mediana  0.343  max 13.329
+  xi target    : min  0.082  mediana  0.082  max  0.716
+
+  corr(RMS a_z, xi)          = +0.630   <- il SEGNALE VERO (xi* dipende dalla rugosita')
+  Spearman(RMS a_z, xi)      = +0.740
+  corr(v, xi)                = +0.527   <- informazione COMPLEMENTARE: serve a convertire a_z in rugosita'
+  corr(RMS a_z, v)           = +0.413   <- quanto a_z e v sono confuse fra loro
+  corr parziale (a v fissa)  = +0.533   <- quanto conta a_z A PARITA' di velocita' (deve essere grande)
+  copertura griglia (v x a_z)= 94%      <- alta = disegno fattoriale, bassa = diagonale
+
+  Tabella incrociata: xi target medio per bin di velocita' e di RMS a_z
+  RMS \ v [km/h]         14       25       37       57       89
+  -------------------------------------------------------------
+            7.38      0.218    0.249    0.330    0.325    0.352
+            0.94      0.146    0.153    0.186    0.270    0.321
+            0.36      0.085    0.090    0.094    0.119    0.135
+            0.21      0.083    0.083    0.089    0.091    0.096
+            0.11      0.082    0.082    0.083    0.084    0.087
+  ('--' = cella VUOTA: combinazione mai vista in addestramento; se le celle piene
+   stanno su una diagonale, velocita' e accelerazione NON sono separabili)
+
+================================================================================================
+ 4) INDICI DI SANITA' FISICA   [target = xi* ottimo]
+================================================================================================
+  [    ] quota di xi spiegata da a_z  = 0.899   (ora NON deve essere 0: se lo e', la rete ignora la strada)
+          variazione di xi lungo a_z  = 0.1136
+          variazione di xi lungo v    = 0.0128
+  [OK  ] errore closed-loop |xi - xi*| = 0.0238   (e' l'indicatore che conta ora)
+  [OK  ] escursione con la strada: rete 0.212 contro target 0.244  (87% del necessario)
+  [    ] frazione monotona in v       = 38.5%  (non piu' un requisito: la tenuta puo' chiedere di irrigidire)
+  [    ] distanza dal baseline √2     = 0.2143   (se ~0 la correzione appresa non sta facendo nulla)
+
+  Sensibilita' d(xi)/d(log10 RMS a_z), crossover r=√2 a 53 km/h:
+        sotto il crossover : +0.1160
+        sopra il crossover : +0.1221
+        (sopra r=√2 una sensibilita' POSITIVA e' un anello di retroazione
+         positivo, ma ora puo' essere legittimo: se xi* stesso sale con la
+         rugosita', l'anello e' voluto. Va giudicato contro xi*, non da solo.)
+
+  Figura diagnostica salvata: diagnostica_xi.png
+  Report testuale salvato:    diagnostica_report.txt
+    [ok] Figura salvata: risultati_sospensione.png
+    [ok] Figura efficienza salvata: efficienza_sospensione.png
+
+[3] Animazione: tutti i controllori sulla stessa strada demo...
+    (la strada demo e' severa — equivale a una classe E ISO 8608 — quindi xi DEVE muoversi parecchio)
+    Controllori simulati sulla stessa strada demo (8 s):
+                          xi  comfort Wk  gomma[mm]  margine
+      ML       0.094-0.442        1.91       4.56     0.98
+      ottimo   0.082-0.429        1.81       4.59     0.99
+      sqrt2    0.120-0.606        1.97       5.94     1.28
+      passivo  0.307 (fisso)        1.98       4.50     0.96
+      (margine > 1 = il vincolo di distacco ruota e' violato)
+    scarto medio |xi_ML - xi*| sulla demo: 0.033
+    [i] MP4 non salvato: manca ffmpeg. Per installarlo: brew install ffmpeg
+        (l'animazione a schermo funziona comunque) FileNotFoundError
+==========================================================================================
