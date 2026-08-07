@@ -223,10 +223,24 @@ def anima_confronto(traj, cfg, path_video=None, auto=None):
         return dict(corsa=zs - zu, vel_cassa=np.gradient(zs, dt_),
                     vel_ruota=np.gradient(zu, dt_), jerk=np.gradient(acc, dt_))
 
+    # COMPRESSIONE STATICA DEL PNEUMATICO (d_max = (m_s+m_u)*g/k_t, la stessa soglia usata
+    # altrove per "margine_gomma"/"distacco"). Il pneumatico e' GIA' compresso di questa
+    # quantita' da fermo, per reggere il peso dell'auto: x3=0 nello stato integrato e'
+    # l'equilibrio statico (pneumatico compresso), non il pneumatico a riposo scarico.
+    # Disegnando la ruota come cerchio a raggio FISSO, senza questo offset qualunque
+    # decompressione (x3>0, il pneumatico che torna verso la sua lunghezza naturale, ancora
+    # ampiamente a contatto) appare come un gap visivo — succede per ~meta' dei fotogrammi
+    # per pura oscillazione attorno allo zero, anche quando il vero distacco (|x3|>d_max,
+    # stesso criterio di xi_ottimo.metriche) e' raro. Spostando la ruota disegnata in basso
+    # di d_max (amplificato dallo stesso gain, per restare coerente con tutto il resto), il
+    # gap visivo appare SOLO quando la deflessione supera davvero la soglia di distacco.
+    _d_max = ((getattr(auto, "massa_cassa", 260.0) + getattr(auto, "massa_ruota", 38.0))
+              * 9.80665 / getattr(auto, "rigid_gomma", 190000.0))
+
     SER = {}
     for n, t in trajs.items():
         d = dict(cassa=_QUOTA_BASE_CASSA + t["quota_cassa_ml"] * g,
-                 ruota=t["quota_ruota_ml"] * g + _RAGGIO_RUOTA,
+                 ruota=(t["quota_ruota_ml"] - _d_max) * g + _RAGGIO_RUOTA,
                  xi=t["xi"], forza=t["forza"], acc=t["acc_cassa_ml"],
                  gomma=t["defl_gomma_ml"], quota=t["quota_cassa_ml"])
         d.update(_cinematica(t, "ml"))
@@ -240,7 +254,7 @@ def anima_confronto(traj, cfg, path_video=None, auto=None):
     PAS["gomma"] = ric(traj["defl_gomma_pas"])
     PAS["rms_cum"] = ric(np.sqrt(np.cumsum(np.asarray(traj["acc_cassa_pas"], float) ** 2)
                                  / np.arange(1, traj["N"] + 1)))
-    ruota_pas_y = ric(traj["quota_ruota_pas"]) * g + _RAGGIO_RUOTA
+    ruota_pas_y = (ric(traj["quota_ruota_pas"]) - _d_max) * g + _RAGGIO_RUOTA
 
     # classe ISO equivalente della strada demo: da' un metro immediato ai numeri
     from contesto import classe_iso_equivalente
@@ -255,15 +269,30 @@ def anima_confronto(traj, cfg, path_video=None, auto=None):
     # etichette degli assi, e il riquadro dei dati stava DENTRO l'area di disegno, dove passa
     # la cassa. Qui ogni cosa ha la sua cella:
     #     colonna 0  comandi (selettore + riepilogo + nota)
-    #     colonna 1  i due disegni del quarter-car
+    #     colonna 1  i due disegni del quarter-car, e SOTTO il confronto quota cassa nel tempo
     #     colonna 2  i dati istantanei, uno per disegno
-    fig = plt.figure(figsize=(14.4 if multi else 11.8, 7.8))
+    #
+    # RIGA 2 (axCmp), PERCHE' ESISTE. Il gain visivo (anim_gain) amplifica il movimento del
+    # quarter-car, ma la differenza fra controllato e passivo resta una piccola frazione della
+    # sagoma statica dell'auto (ruota+cassa+ammortizzatore, oltre 2 m disegnati contro pochi cm
+    # di differenza anche amplificata): a occhio, guardando solo i due quarter-car, i
+    # controllori sembrano "tutti uguali" anche quando i numeri (RMS, tabella dati) dicono il
+    # contrario. axCmp mostra le stesse quote in mm REALI (non amplificate) su una finestra
+    # scorrevole di pochi secondi: li' la differenza si vede, perche' l'asse non deve anche
+    # contenere la sagoma dell'auto.
+    # ALTEZZA E height_ratios: i riquadri dati (axTd/axBd) hanno testo a dimensione FISSA in
+    # punti (non scala con gli assi), quindi righe piu' basse di quelle originali li fanno
+    # traboccare l'uno nell'altro. Qui le righe 0/1 restano alte quanto prima (~3.1 pollici),
+    # la riga nuova (axCmp) si aggiunge in piu' invece di rubare spazio alle altre due.
+    fig = plt.figure(figsize=(14.4 if multi else 11.8, 9.8))
     larghezze = [0.95, 3.4, 1.05] if multi else [0.02, 3.4, 1.05]
-    gs = fig.add_gridspec(2, 3, width_ratios=larghezze,
-                          left=0.035, right=0.995, top=0.875, bottom=0.085,
-                          wspace=0.12, hspace=0.24)
+    gs = fig.add_gridspec(3, 3, width_ratios=larghezze, height_ratios=[1.0, 1.0, 0.5],
+                          left=0.035, right=0.995, top=0.865, bottom=0.055,
+                          wspace=0.12, hspace=0.40)
     axT = fig.add_subplot(gs[0, 1])
     axB = fig.add_subplot(gs[1, 1], sharex=axT)
+    axCmp = fig.add_subplot(gs[2, 1])           # NON sharex con axT/axB: qui l'asse x e' il TEMPO,
+                                                 # non la posizione lungo la strada
     axTd = fig.add_subplot(gs[0, 2])
     axBd = fig.add_subplot(gs[1, 2])
 
@@ -283,6 +312,30 @@ def anima_confronto(traj, cfg, path_video=None, auto=None):
     axB.set_xlabel("posizione strada [m]", fontsize=_FONT["assi"])
     plt.setp(axT.get_xticklabels(), visible=False)      # asse x condiviso: una sola scala
     ybot = -0.3
+
+    # --- confronto quota cassa nel tempo, valori REALI (non amplificati dal gain) ---
+    # finestra scorrevole di pochi secondi: mostra solo il tratto recente, cosi' la scala
+    # dell'asse Y resta quella del dettaglio (mm) invece di quella dell'intera demo
+    _fin_secondi = 3.5
+    _win_frame = max(2, int(round(_fin_secondi / (dur / n_frame))))
+    axCmp.set_title("quota cassa nel tempo — valori REALI in mm (non amplificati)",
+                    fontsize=_FONT["titolo_pannello"] - 1, fontweight="bold")
+    axCmp.set_xlabel("t [s]", fontsize=_FONT["assi"])
+    axCmp.set_ylabel("z_s [mm]", fontsize=_FONT["assi"])
+    axCmp.tick_params(labelsize=_FONT["assi"] - 1)
+    axCmp.grid(True, ls="--", alpha=0.3)
+    # colori DELIBERATAMENTE diversi da quelli dei due quarter-car (verde/grigio): blu e
+    # arancio sono la coppia a massimo contrasto reciproco e leggibile anche da chi ha
+    # deuteranopia (la coppia verde/rosso no), e non si confondono con le sagome sopra
+    linea_cmp_att, = axCmp.plot([], [], "-", c="royalblue", lw=1.8, label="controllato")
+    linea_cmp_pas, = axCmp.plot([], [], "-", c="darkorange", lw=1.8, label="passivo")
+    axCmp.legend(fontsize=_FONT["assi"] - 1, loc="upper right", ncol=2, framealpha=0.85)
+    # scala Y fissa, calcolata sull'intera demo (tutti i controllori + passivo) con un margine:
+    # fissa perche' una scala che si auto-ridimensiona a ogni fotogramma e' distraente da guardare
+    _tutte_quote_mm = np.concatenate([SER[n]["quota"] for n in nomi] + [PAS["quota"]]) * 1000.0
+    _margine_cmp = 0.10 * (np.ptp(_tutte_quote_mm) + 1e-6)
+    axCmp.set_ylim(_tutte_quote_mm.min() - _margine_cmp, _tutte_quote_mm.max() + _margine_cmp)
+    axCmp.set_xlim(0.0, min(_fin_secondi, dur))
 
     # --- selettore del controllore, attivo durante l'animazione ---
     radio = None
@@ -379,6 +432,12 @@ def anima_confronto(traj, cfg, path_video=None, auto=None):
             PAS["quota"][k], PAS["vel_cassa"][k], PAS["acc"][k],
             PAS["vel_ruota"][k], PAS["corsa"][k], PAS["gomma"][k], PAS["rms_cum"][k]))
         xc = x_pos[k]; axT.set_xlim(xc - W, xc + W); axB.set_xlim(xc - W, xc + W)
+        # confronto quota cassa: finestra scorrevole degli ultimi _fin_secondi, valori REALI
+        i0 = max(0, k - _win_frame)
+        linea_cmp_att.set_data(T_FRAME[i0:k + 1], S["quota"][i0:k + 1] * 1000.0)
+        linea_cmp_pas.set_data(T_FRAME[i0:k + 1], PAS["quota"][i0:k + 1] * 1000.0)
+        t_ora = T_FRAME[k]
+        axCmp.set_xlim(max(0.0, t_ora - _fin_secondi), max(_fin_secondi, t_ora))
         return ()
 
     # blit=False obbligatorio: cambiando controllore va ridisegnato tutto, non solo gli
