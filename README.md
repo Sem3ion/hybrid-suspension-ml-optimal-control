@@ -30,6 +30,19 @@ Python 3.14+ recommended. Install the dependencies with:
 pip install -r requirements.txt
 ```
 
+**GPU note.** `requirements.txt` only pins `torch>=2.5.0`, with no platform-specific index. Whether that gives you a GPU-enabled build depends on the OS:
+
+- **macOS (Apple Silicon):** the standard PyPI wheel already includes Metal/MPS GPU support — nothing extra to do. `hardware.py` detects and uses it automatically (`torch.backends.mps.is_available()`).
+- **Windows / Linux with an NVIDIA GPU:** the plain PyPI wheel installed by `pip install -r requirements.txt` is **CPU-only** on Windows (Linux gets a CUDA build by default, Windows does not). To get CUDA support, install PyTorch **first**, with the command for your CUDA version from [pytorch.org/get-started/locally](https://pytorch.org/get-started/locally/), e.g.:
+
+  ```bash
+  pip install torch --index-url https://download.pytorch.org/whl/cu128
+  pip install -r requirements.txt
+  ```
+
+  Installing torch first means the subsequent `pip install -r requirements.txt` will see the constraint already satisfied and won't overwrite it with the CPU-only build.
+- **No matching GPU / skipped the step above:** the code still runs correctly on CPU — `hardware.py` falls back automatically and only training speed is affected, not correctness.
+
 ## Usage
 
 **Locally:** clone the repository and open `1. Progetto AML - NOTEBOOK.ipynb` with Jupyter or VSCode, after installing the requirements above.
